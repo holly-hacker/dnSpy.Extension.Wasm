@@ -1,9 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+    <!-- Imports dnlib version -->
+    <Import Project="../dnSpy/DnSpyCommon.props" />
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>10</LangVersion>
+        <UseWPF>true</UseWPF>
+        <AssemblyName>dnSpy.Extension.Wasm.x</AssemblyName>
+        <AssemblyVersion>0.0.1.0</AssemblyVersion>
     </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\dnSpy\dnSpy\dnSpy.Contracts.DnSpy\dnSpy.Contracts.DnSpy.csproj" />
+        <ProjectReference Include="..\dnSpy\dnSpy\dnSpy.Contracts.Logic\dnSpy.Contracts.Logic.csproj" />
+    </ItemGroup>
 
 </Project>

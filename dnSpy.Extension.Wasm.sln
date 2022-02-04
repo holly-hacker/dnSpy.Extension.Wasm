@@ -2,6 +2,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dnSpy.Extension.Wasm", "dnSpy.Extension.Wasm\dnSpy.Extension.Wasm.csproj", "{1F3C0695-2847-47D3-93AB-CC1F87310FFC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dnSpy", "dnSpy", "{A65A456D-16B2-4799-AB1E-0D5C88C7F6AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dnSpy.Contracts.Logic", "dnSpy\dnSpy\dnSpy.Contracts.Logic\dnSpy.Contracts.Logic.csproj", "{A2D26C1D-FDE2-41C4-8F32-15E2594A92DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dnSpy.Contracts.DnSpy", "dnSpy\dnSpy\dnSpy.Contracts.DnSpy\dnSpy.Contracts.DnSpy.csproj", "{08961687-8347-4AD0-ABF9-9144EBCB7A5A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +18,17 @@ Global
 		{1F3C0695-2847-47D3-93AB-CC1F87310FFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F3C0695-2847-47D3-93AB-CC1F87310FFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F3C0695-2847-47D3-93AB-CC1F87310FFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2D26C1D-FDE2-41C4-8F32-15E2594A92DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2D26C1D-FDE2-41C4-8F32-15E2594A92DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2D26C1D-FDE2-41C4-8F32-15E2594A92DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2D26C1D-FDE2-41C4-8F32-15E2594A92DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08961687-8347-4AD0-ABF9-9144EBCB7A5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08961687-8347-4AD0-ABF9-9144EBCB7A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08961687-8347-4AD0-ABF9-9144EBCB7A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08961687-8347-4AD0-ABF9-9144EBCB7A5A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A2D26C1D-FDE2-41C4-8F32-15E2594A92DF} = {A65A456D-16B2-4799-AB1E-0D5C88C7F6AA}
+		{08961687-8347-4AD0-ABF9-9144EBCB7A5A} = {A65A456D-16B2-4799-AB1E-0D5C88C7F6AA}
 	EndGlobalSection
 EndGlobal
