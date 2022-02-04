@@ -16,4 +16,8 @@
         <ProjectReference Include="..\dnSpy\dnSpy\dnSpy.Contracts.Logic\dnSpy.Contracts.Logic.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="WebAssembly" Version="1.2.0" />
+    </ItemGroup>
+
 </Project>

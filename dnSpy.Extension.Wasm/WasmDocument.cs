@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using dnSpy.Contracts.Decompiler;
@@ -7,6 +8,8 @@ using dnSpy.Contracts.Documents.Tabs.DocViewer;
 using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
+using dnSpy.Contracts.TreeView;
+using WebAssembly;
 
 namespace dnSpy.Extension.Wasm;
 
@@ -17,7 +20,12 @@ internal class WasmDocument : DsDocument
 	public WasmDocument(string path)
 	{
 		Filename = path;
+
+		// parse
+		Module = Module.ReadFromBinary(path);
 	}
+
+	public Module Module { get; }
 
 	/// <remarks>
 	/// Returning non-null here implies we support serialization. I assume this means caching the decompiled output to
@@ -79,8 +87,31 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 	public bool Decompile(IDecompileNodeContext context)
 	{
 		context.ContentTypeString = Constants.ContentTypeWasmInfo;
-		context.Output.WriteLine("Hello, world!", BoxedTextColor.Text);
+
+		var items = new[]
+		{
+			("Functions", _document.Module.Functions.Count),
+			("Codes", _document.Module.Codes.Count),
+			("Types", _document.Module.Types.Count),
+			("Imports", _document.Module.Imports.Count),
+			("Exports", _document.Module.Exports.Count),
+			("Tables", _document.Module.Tables.Count),
+		};
+
+		foreach ((string? name, int count) in items)
+		{
+			context.Output.Write(name, BoxedTextColor.Keyword);
+			context.Output.Write(": ", BoxedTextColor.Operator);
+			context.Output.Write(count.ToString(), BoxedTextColor.Number);
+			context.Output.WriteLine();
+		}
+
 		return true;
+	}
+
+	public override IEnumerable<TreeNodeData> CreateChildren()
+	{
+		yield return new FunctionsNode(_document.Module);
 	}
 }
 
