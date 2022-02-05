@@ -7,8 +7,8 @@ using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
+using dnSpy.Extension.Wasm.Decompilers;
 using WebAssembly;
-using WebAssembly.Instructions;
 
 namespace dnSpy.Extension.Wasm;
 
@@ -124,14 +124,8 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		context.Output.WriteLine(_type.ToString(), BoxedTextColor.Text);
-		context.Output.WriteLine();
-
-		foreach (var instruction in _code.Code)
-		{
-			// for now, just use the default ToString implementation this library provides
-			context.Output.WriteLine(instruction.ToString(), BoxedTextColor.Text);
-		}
+		var dec = new DisassemblerDecompiler();
+		dec.Decompile(context, _index, _code, _type);
 
 		return true;
 	}
