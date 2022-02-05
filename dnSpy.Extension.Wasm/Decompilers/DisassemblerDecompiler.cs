@@ -1,9 +1,6 @@
 using System;
-using System.Globalization;
 using System.Linq;
-using dnSpy.Contracts.Decompiler;
 using dnSpy.Contracts.Documents.Tabs.DocViewer;
-using dnSpy.Contracts.Text;
 using WebAssembly;
 using WebAssembly.Instructions;
 
@@ -13,154 +10,118 @@ public class DisassemblerDecompiler : IWasmDecompiler
 {
 	public void Decompile(IDecompileNodeContext context, int index, FunctionBody code, WebAssemblyType type)
 	{
-		context.Output.WriteLine(type.ToString(), BoxedTextColor.Text);
-		context.Output.WriteLine();
-		context.Output.Write("{", BoxedTextColor.Punctuation);
+		var writer = new DecompilerWriter(context.Output);
+
+		writer.Text(type.ToString()).EndLine().EndLine();
+		writer.Punctuation("{").EndLine();
+		writer.Indent();
 
 		int localIndex = 0;
 		foreach (var local in code.Locals)
 		{
 			for (var i = 0; i < local.Count; i++)
 			{
-				context.Output.Write("\tlocal_" + localIndex, BoxedTextColor.Local);
-				context.Output.Write(": ", BoxedTextColor.Punctuation);
-				context.Output.Write(local.Type.ToWasmType(), BoxedTextColor.Keyword);
-				context.Output.WriteLine();
+				writer.Local("local_" + localIndex).Punctuation(": ").Keyword(local.Type.ToWasmType()).EndLine();
 				localIndex++;
 			}
 		}
 
 		if (code.Locals.Any(l => l.Count > 0))
-			context.Output.WriteLine();
+			writer.EndLine();
 
-		void WriteOpCode(OpCode opCode)
-		{
-			context.Output.Write(opCode.ToInstruction(), BoxedTextColor.AsmMnemonic);
-		}
-
-		void WriteSpace()
-		{
-			context.Output.Write(" ", BoxedTextColor.Text);
-		}
-
-		int indentation = 1;
 		foreach (var instruction in code.Code)
 		{
-			context.Output.Write(new string('\t', indentation), BoxedTextColor.Punctuation);
 			switch (instruction)
 			{
 				case BlockTypeInstruction block:
 				{
-					WriteOpCode(instruction.OpCode);
-					if (block.Type != BlockType.Empty)
-						WriteSpace();
-					context.Output.Write(block.Type.ToTypeString(), BoxedTextColor.Keyword);
+					writer.OpCode(instruction.OpCode).Space();
 
-					context.Output.Write(" {", BoxedTextColor.Punctuation);
-					indentation++;
+					if (block.Type != BlockType.Empty)
+						writer.Keyword(block.Type.ToTypeString()).Space();
+
+					writer.Punctuation("{").Indent();
 					break;
 				}
 				case End:
 				{
-					WriteOpCode(instruction.OpCode);
-					context.Output.WriteLine();
-					indentation--;
-					context.Output.Write(new string('\t', indentation) + "}", BoxedTextColor.Punctuation);
+					writer.OpCode(instruction.OpCode).EndLine().DeIndent().Punctuation("}");
 					break;
 				}
 				case Branch branch:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(branch.Index.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(branch.Index);
 					break;
 				}
 				case BranchIf branchIf:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(branchIf.Index.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(branchIf.Index);
 					break;
 				}
 				case Call call:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(call.Index.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(call.Index);
 					break;
 				}
 				case CallIndirect callIndirect:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(callIndirect.Type.ToString(CultureInfo.InvariantCulture),
-						BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(callIndirect.Type);
 					break;
 				}
 				case MemoryImmediateInstruction memImm:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write("(", BoxedTextColor.Punctuation);
-					context.Output.Write("align", BoxedTextColor.Text);
-					context.Output.Write("=", BoxedTextColor.Punctuation);
-					context.Output.Write(((int)Math.Pow(2, (int)memImm.Flags)).ToString(CultureInfo.InvariantCulture),
-						BoxedTextColor.Number);
-					context.Output.Write(", ", BoxedTextColor.Punctuation);
-					context.Output.Write("offset", BoxedTextColor.Text);
-					context.Output.Write("=", BoxedTextColor.Punctuation);
-					context.Output.Write(memImm.Offset.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
-					context.Output.Write(")", BoxedTextColor.Punctuation);
+					writer.OpCode(instruction.OpCode)
+						.Space()
+						.Punctuation("(")
+						.Text("align")
+						.Punctuation("=")
+						.Number((int)Math.Pow(2, (int)memImm.Flags))
+						.Punctuation(", ")
+						.Text("offset")
+						.Punctuation("=")
+						.Number(memImm.Offset)
+						.Punctuation(")");
 					break;
 				}
 				case Constant<int> constant:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(constant.Value.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(constant.Value);
 					break;
 				}
 				case Constant<long> constant:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(constant.Value.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(constant.Value);
 					break;
 				}
 				case Constant<float> constant:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(constant.Value.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(constant.Value);
 					break;
 				}
 				case Constant<double> constant:
 				{
-					WriteOpCode(instruction.OpCode);
-					context.Output.Write(constant.Value.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(constant.Value);
 					break;
 				}
 				case SimpleInstruction:
 				{
-					WriteOpCode(instruction.OpCode);
+					writer.OpCode(instruction.OpCode);
 					break;
 				}
 				case VariableAccessInstruction va:
 				{
-					WriteOpCode(instruction.OpCode);
-					WriteSpace();
-					context.Output.Write(va.Index.ToString(), BoxedTextColor.Number);
+					writer.OpCode(instruction.OpCode).Space().Number(va.Index);
 					break;
 				}
 				default:
 				{
 					Console.WriteLine("Unhandled instruction: " + instruction);
-					context.Output.Write(instruction.ToString(), BoxedTextColor.Text);
+					writer.Text(instruction.ToString());
 					break;
-			}
+				}
 			}
 
-			context.Output.WriteLine();
+			writer.EndLine();
 		}
 	}
 }
