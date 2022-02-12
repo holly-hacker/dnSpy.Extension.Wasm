@@ -65,6 +65,17 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 					writer.OpCode(instruction.OpCode).Space().Number(branchIf.Index);
 					break;
 				}
+				case BranchTable branchTable:
+				{
+					writer.OpCode(instruction.OpCode).Space();
+					foreach (uint label in branchTable.Labels)
+					{
+						writer.Number(label).Space();
+					}
+
+					writer.Number(branchTable.DefaultLabel);
+					break;
+				}
 				case Call call:
 				{
 					writer.OpCode(instruction.OpCode).Space().Number(call.Index);
