@@ -11,7 +11,7 @@ using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
 using WebAssembly;
 
-namespace dnSpy.Extension.Wasm;
+namespace dnSpy.Extension.Wasm.TreeView;
 
 internal class WasmDocument : DsDocument
 {
@@ -111,6 +111,7 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
+		yield return new ExportsNode(_document.Module);
 		yield return new FunctionsNode(_document.Module);
 	}
 }

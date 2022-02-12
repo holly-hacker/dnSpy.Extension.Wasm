@@ -10,7 +10,7 @@ using dnSpy.Contracts.TreeView;
 using dnSpy.Extension.Wasm.Decompilers;
 using WebAssembly;
 
-namespace dnSpy.Extension.Wasm;
+namespace dnSpy.Extension.Wasm.TreeView;
 
 internal class FunctionsNode : DocumentTreeNodeData, IDecompileSelf
 {
@@ -50,12 +50,11 @@ internal class FunctionsNode : DocumentTreeNodeData, IDecompileSelf
 		// if (this.GetDocumentNode()?.Document is not WasmDocument wasmDocument)
 		// 	yield break;
 
-		var mod = _module;
-		for (var i = 0; i < mod.Functions.Count; i++)
+		for (var i = 0; i < _module.Functions.Count; i++)
 		{
-			var function = mod.Functions[i];
-			var code = mod.Codes[i];
-			var type = mod.Types[(int)function.Type];
+			var function = _module.Functions[i];
+			var code = _module.Codes[i];
+			var type = _module.Types[(int)function.Type];
 
 			yield return new FunctionNode(i, code, type);
 		}
@@ -87,39 +86,8 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		output.Write(BoxedTextColor.StaticMethod, $"func_{_index}");
-
-		output.Write(BoxedTextColor.Punctuation, "(");
-		bool firstParameter = true;
-		foreach (var parameter in _type.Parameters)
-		{
-			if (!firstParameter)
-				output.Write(BoxedTextColor.Punctuation, ", ");
-			firstParameter = false;
-
-			output.Write(BoxedTextColor.Keyword, parameter.ToWasmType());
-		}
-
-		output.Write(BoxedTextColor.Punctuation, ")");
-
-		if (_type.Returns.Any())
-		{
-			output.Write(BoxedTextColor.Punctuation, ": ");
-
-			if (_type.Returns.Count > 1) output.Write(BoxedTextColor.Punctuation, "(");
-
-			bool firstReturnParameter = true;
-			foreach (var returnParameter in _type.Returns)
-			{
-				if (!firstReturnParameter)
-					output.Write(BoxedTextColor.Punctuation, ", ");
-				firstReturnParameter = false;
-
-				output.Write(BoxedTextColor.Keyword, returnParameter.ToWasmType());
-			}
-
-			if (_type.Returns.Count > 1) output.Write(BoxedTextColor.Punctuation, ")");
-		}
+		var name = $"func_{_index}";
+		new TextColorWriter(output).FunctionDeclaration(name, _type);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)

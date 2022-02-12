@@ -12,8 +12,10 @@ public class DisassemblerDecompiler : IWasmDecompiler
 	{
 		var writer = new DecompilerWriter(context.Output);
 
-		writer.Text(type.ToString()).EndLine().EndLine();
-		writer.Punctuation("{").EndLine();
+		writer.FunctionDeclaration($"function_{index}", type);
+		writer.EndLine();
+		writer.Punctuation("{");
+		writer.EndLine();
 		writer.Indent();
 
 		int localIndex = 0;
@@ -21,7 +23,8 @@ public class DisassemblerDecompiler : IWasmDecompiler
 		{
 			for (var i = 0; i < local.Count; i++)
 			{
-				writer.Local("local_" + localIndex).Punctuation(": ").Keyword(local.Type.ToWasmType()).EndLine();
+				writer.Local("local_" + localIndex).Punctuation(": ").Keyword(local.Type.ToWasmType());
+				writer.EndLine();
 				localIndex++;
 			}
 		}
@@ -40,12 +43,14 @@ public class DisassemblerDecompiler : IWasmDecompiler
 					if (block.Type != BlockType.Empty)
 						writer.Keyword(block.Type.ToTypeString()).Space();
 
-					writer.Punctuation("{").Indent();
+					writer.Punctuation("{");
+					writer.Indent();
 					break;
 				}
 				case End:
 				{
-					writer.OpCode(instruction.OpCode).EndLine().DeIndent().Punctuation("}");
+					writer.OpCode(instruction.OpCode);
+					writer.EndLine().DeIndent().Punctuation("}");
 					break;
 				}
 				case Branch branch:
