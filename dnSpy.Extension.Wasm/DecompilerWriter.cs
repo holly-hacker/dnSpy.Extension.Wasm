@@ -37,10 +37,10 @@ internal class DecompilerWriter
 
 	public DecompilerWriter Punctuation(string text) => Write(text, BoxedTextColor.Punctuation);
 
-	public DecompilerWriter Number(long number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
-	public DecompilerWriter Number(ulong number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
-	public DecompilerWriter Number(float number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
-	public DecompilerWriter Number(double number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number);
+	public DecompilerWriter Number(int number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+	public DecompilerWriter Number(long number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+	public DecompilerWriter Number(float number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+	public DecompilerWriter Number(double number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 
 	public DecompilerWriter Local(string text) => Write(text, BoxedTextColor.Local);
 
@@ -48,9 +48,9 @@ internal class DecompilerWriter
 
 	public DecompilerWriter OpCode(OpCode code) => Write(code.ToInstruction(), BoxedTextColor.AsmMnemonic);
 
-	private DecompilerWriter Write(string text, object color)
+	private DecompilerWriter Write(string text, object color, object? reference = null, DecompilerReferenceFlags flags = DecompilerReferenceFlags.None)
 	{
-		_output.Write(text, color);
+		_output.Write(text, reference, flags, color);
 		return this;
 	}
 }
