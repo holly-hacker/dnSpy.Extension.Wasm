@@ -45,20 +45,20 @@ internal class ExportsNode : DocumentTreeNodeData, IDecompileSelf
 			switch (export.Kind)
 			{
 				case ExternalKind.Function:
-					var function = module.Functions[(int)export.Index];
+					var function = module.Functions[(int)export.Index - _document.ImportedFunctionCount];
 					var functionType = module.Types[(int)function.Type];
 					yield return new FunctionExportNode(export.Name, functionType);
 					break;
 				case ExternalKind.Table:
-					var table = module.Tables[(int)export.Index];
+					var table = module.Tables[(int)export.Index - _document.ImportedTableCount];
 					yield return new TableExportNode(export.Name, table);
 					break;
 				case ExternalKind.Memory:
-					var memory = module.Memories[(int)export.Index];
+					var memory = module.Memories[(int)export.Index - _document.ImportedMemoryCount];
 					yield return new MemoryExportNode(export.Name, memory);
 					break;
 				case ExternalKind.Global:
-					var global = module.Globals[(int)export.Index];
+					var global = module.Globals[(int)export.Index - _document.ImportedGlobalCount];
 					yield return new GlobalExportNode(export.Name, global);
 					break;
 				default:
@@ -199,7 +199,7 @@ internal class GlobalExportNode : DocumentTreeNodeData, IDecompileSelf
 			.Text(_name)
 			.Punctuation(":")
 			.Space()
-			.Text(_global.ToString());
+			.Text(_global.ToString()!);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
