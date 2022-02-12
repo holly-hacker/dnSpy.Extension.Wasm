@@ -30,9 +30,23 @@ internal class WasmDocument : DsDocument
 
 		// parse
 		Module = Module.ReadFromBinary(path);
+
+		try
+		{
+			var nameSection = Module.CustomSections.SingleOrDefault(s => s.Name == "name" && s.PrecedingSection == Section.Data);
+			if (nameSection != null)
+			{
+				NameSection = NameSection.Read(nameSection.Content.ToArray());
+			}
+		}
+		catch (Exception e)
+		{
+			Debug.WriteLine("Failed to parse Name section: " + e);
+		}
 	}
 
 	public Module Module { get; }
+	public NameSection? NameSection { get; }
 
 	public int ImportedFunctionCount => _importedFunctionCount ??= Module.Imports.OfType<Import.Function>().Count();
 	public int ImportedTableCount => _importedTableCount ??= Module.Imports.OfType<Import.Table>().Count();
@@ -47,27 +61,29 @@ internal class WasmDocument : DsDocument
 
 	public override IDsDocumentNameKey Key => new FilenameKey(Filename);
 
-	public string GetFunctionName(int index)
+	public string GetFunctionNameFromSectionIndex(int index)
 	{
 		var export = Module.Exports.SingleOrDefault(e => e.Kind == ExternalKind.Function && e.Index - ImportedFunctionCount == index);
 
 		return export switch
 		{
 			{ } => export.Name,
+			_ when NameSection?.FunctionNames?.ContainsKey(index + ImportedFunctionCount) == true
+				=> NameSection.FunctionNames[index + ImportedFunctionCount],
 			_ => $"function_{index}",
 		};
 	}
 
-	public string GetFunctionNameFromFunctionIndex(int fullIndex)
+	public string GetFunctionName(int fullIndex)
 	{
 		return TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) switch
 		{
 			{ } import => $"{import.Module}::{import.Field}",
-			_ => GetFunctionName(sectionIndex),
+			_ => GetFunctionNameFromSectionIndex(sectionIndex),
 		};
 	}
 
-	public WebAssemblyType GetFunctionTypeFromFunctionIndex(int fullIndex)
+	public WebAssemblyType GetFunctionType(int fullIndex)
 	{
 		uint typeIndex = TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) switch
 		{

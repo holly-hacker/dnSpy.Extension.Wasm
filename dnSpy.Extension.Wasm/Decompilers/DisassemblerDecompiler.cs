@@ -13,7 +13,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 	{
 		var writer = new DecompilerWriter(context.Output);
 
-		string functionName = doc.GetFunctionName(index);
+		string functionName = doc.GetFunctionNameFromSectionIndex(index);
 		writer.FunctionDeclaration(functionName, type);
 		writer.EndLine();
 		writer.Punctuation("{");

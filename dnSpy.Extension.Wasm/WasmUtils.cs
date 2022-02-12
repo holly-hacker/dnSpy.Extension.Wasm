@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using WebAssembly;
@@ -32,7 +33,24 @@ public static class WasmUtils
 		return typeof(OpCode)
 			.GetMember(opcode.ToString())
 			.Single()
-			.GetCustomAttribute<OpCodeCharacteristicsAttribute>()
+			.GetCustomAttribute<OpCodeCharacteristicsAttribute>()!
 			.Name;
+	}
+
+	public static uint ReadULEB128(this BinaryReader br)
+	{
+		uint val = 0;
+		int shift = 0;
+
+		while (true)
+		{
+			byte b = br.ReadByte();
+
+			val |= (uint)((b & 0x7f) << shift);
+			if ((b & 0x80) == 0) break;
+			shift += 7;
+		}
+
+		return val;
 	}
 }

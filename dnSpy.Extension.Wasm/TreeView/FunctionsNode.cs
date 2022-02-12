@@ -89,7 +89,7 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		var name = _document.GetFunctionName(_index);
+		var name = _document.GetFunctionNameFromSectionIndex(_index);
 		new TextColorWriter(output).FunctionDeclaration(name, _type);
 	}
 
