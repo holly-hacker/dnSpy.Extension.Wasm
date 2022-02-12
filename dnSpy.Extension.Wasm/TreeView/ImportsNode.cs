@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using dnSpy.Contracts.Decompiler;
 using dnSpy.Contracts.Documents.Tabs.DocViewer;
 using dnSpy.Contracts.Documents.TreeView;
@@ -14,11 +15,11 @@ internal class ImportsNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("d09cbe50-b61a-4af2-9e1c-711b4c750ec4");
 
-	private readonly Module _module;
+	private readonly WasmDocument _document;
 
-	public ImportsNode(Module module)
+	public ImportsNode(WasmDocument document)
 	{
-		_module = module;
+		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -39,26 +40,14 @@ internal class ImportsNode : DocumentTreeNodeData, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		foreach (var import in _module.Imports)
+		return _document.Module.Imports.Select(import => (TreeNodeData)(import switch
 		{
-			switch (import)
-			{
-				case Import.Function function:
-					yield return new FunctionImportNode(function);
-					break;
-				case Import.Table table:
-					yield return new TableImportNode(table);
-					break;
-				case Import.Memory memory:
-					yield return new MemoryImportNode(memory);
-					break;
-				case Import.Global global:
-					yield return new GlobalImportNode(global);
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
-		}
+			Import.Function function => new FunctionImportNode(function),
+			Import.Table table => new TableImportNode(table),
+			Import.Memory memory => new MemoryImportNode(memory),
+			Import.Global global => new GlobalImportNode(global),
+			_ => throw new ArgumentOutOfRangeException(),
+		}));
 	}
 }
 

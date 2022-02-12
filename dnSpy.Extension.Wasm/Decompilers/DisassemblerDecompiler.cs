@@ -1,18 +1,20 @@
 using System;
 using System.Linq;
 using dnSpy.Contracts.Documents.Tabs.DocViewer;
+using dnSpy.Extension.Wasm.TreeView;
 using WebAssembly;
 using WebAssembly.Instructions;
 
 namespace dnSpy.Extension.Wasm.Decompilers;
 
-public class DisassemblerDecompiler : IWasmDecompiler
+internal class DisassemblerDecompiler : IWasmDecompiler
 {
-	public void Decompile(IDecompileNodeContext context, int index, FunctionBody code, WebAssemblyType type)
+	public void Decompile(WasmDocument doc, IDecompileNodeContext context, int index, FunctionBody code, WebAssemblyType type)
 	{
 		var writer = new DecompilerWriter(context.Output);
 
-		writer.FunctionDeclaration($"function_{index}", type);
+		string functionName = doc.GetFunctionName(index);
+		writer.FunctionDeclaration(functionName, type);
 		writer.EndLine();
 		writer.Punctuation("{");
 		writer.EndLine();

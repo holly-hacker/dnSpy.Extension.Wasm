@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using dnSpy.Contracts.Decompiler;
 using dnSpy.Contracts.Documents;
 using dnSpy.Contracts.Documents.Tabs.DocViewer;
@@ -17,6 +19,11 @@ internal class WasmDocument : DsDocument
 {
 	public static readonly Guid MyGuid = new("4b25abff-9d40-4ce0-89d6-544128b8dbd1");
 
+	private int? _importedFunctionCount;
+	private int? _importedTableCount;
+	private int? _importedMemoryCount;
+	private int? _importedGlobalCount;
+
 	public WasmDocument(string path)
 	{
 		Filename = path;
@@ -27,6 +34,11 @@ internal class WasmDocument : DsDocument
 
 	public Module Module { get; }
 
+	public int ImportedFunctionCount => _importedFunctionCount ??= Module.Imports.OfType<Import.Function>().Count();
+	public int ImportedTableCount => _importedTableCount ??= Module.Imports.OfType<Import.Table>().Count();
+	public int ImportedMemoryCount => _importedMemoryCount ??= Module.Imports.OfType<Import.Memory>().Count();
+	public int ImportedGlobalCount => _importedGlobalCount ??= Module.Imports.OfType<Import.Global>().Count();
+
 	/// <remarks>
 	/// Returning non-null here implies we support serialization. I assume this means caching the decompiled output to
 	/// disk so it won't have to happen again when reloading?
@@ -34,6 +46,51 @@ internal class WasmDocument : DsDocument
 	public override DsDocumentInfo? SerializedDocument => new DsDocumentInfo(Filename, MyGuid);
 
 	public override IDsDocumentNameKey Key => new FilenameKey(Filename);
+
+	public string GetFunctionName(int index)
+	{
+		var export = Module.Exports.SingleOrDefault(e => e.Kind == ExternalKind.Function && e.Index - ImportedFunctionCount == index);
+
+		return export switch
+		{
+			{ } => export.Name,
+			_ => $"function_{index}",
+		};
+	}
+
+	public string GetFunctionNameFromFunctionIndex(int fullIndex)
+	{
+		return TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) switch
+		{
+			{ } import => $"{import.Module}::{import.Field}",
+			_ => GetFunctionName(sectionIndex),
+		};
+	}
+
+	public WebAssemblyType GetFunctionTypeFromFunctionIndex(int fullIndex)
+	{
+		uint typeIndex = TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) switch
+		{
+			{ } import => import.TypeIndex,
+			_ => Module.Functions[sectionIndex].Type,
+		};
+
+		return Module.Types[(int)typeIndex];
+	}
+
+	private T? TryGetImport<T>(int fullIndex, int importCount, out int sectionIndex) where T : Import
+	{
+		Debug.Assert(importCount <= Module.Imports.Count);
+
+		if (fullIndex <= importCount)
+		{
+			sectionIndex = -1;
+			return Module.Imports.OfType<T>().Skip(fullIndex).FirstOrDefault();
+		}
+
+		sectionIndex = fullIndex - importCount;
+		return null;
+	}
 }
 
 [Export(typeof(IDsDocumentProvider))]
@@ -111,9 +168,9 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		yield return new ImportsNode(_document.Module);
-		yield return new ExportsNode(_document.Module);
-		yield return new FunctionsNode(_document.Module);
+		yield return new ImportsNode(_document);
+		yield return new ExportsNode(_document);
+		yield return new FunctionsNode(_document);
 	}
 }
 

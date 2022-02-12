@@ -14,11 +14,11 @@ internal class ExportsNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("1cfe7bfb-94e0-4399-a860-31b154bd0ba5");
 
-	private readonly Module _module;
+	private readonly WasmDocument _document;
 
-	public ExportsNode(Module module)
+	public ExportsNode(WasmDocument document)
 	{
-		_module = module;
+		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -39,25 +39,26 @@ internal class ExportsNode : DocumentTreeNodeData, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		foreach (var export in _module.Exports)
+		var module = _document.Module;
+		foreach (var export in module.Exports)
 		{
 			switch (export.Kind)
 			{
 				case ExternalKind.Function:
-					var function = _module.Functions[(int)export.Index];
-					var functionType = _module.Types[(int)function.Type];
+					var function = module.Functions[(int)export.Index];
+					var functionType = module.Types[(int)function.Type];
 					yield return new FunctionExportNode(export.Name, functionType);
 					break;
 				case ExternalKind.Table:
-					var table = _module.Tables[(int)export.Index];
+					var table = module.Tables[(int)export.Index];
 					yield return new TableExportNode(export.Name, table);
 					break;
 				case ExternalKind.Memory:
-					var memory = _module.Memories[(int)export.Index];
+					var memory = module.Memories[(int)export.Index];
 					yield return new MemoryExportNode(export.Name, memory);
 					break;
 				case ExternalKind.Global:
-					var global = _module.Globals[(int)export.Index];
+					var global = module.Globals[(int)export.Index];
 					yield return new GlobalExportNode(export.Name, global);
 					break;
 				default:

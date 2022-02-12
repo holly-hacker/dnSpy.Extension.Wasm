@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using dnSpy.Contracts.Decompiler;
 using dnSpy.Contracts.Documents.Tabs.DocViewer;
 using dnSpy.Contracts.Documents.TreeView;
@@ -16,11 +15,11 @@ internal class FunctionsNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("f98e7381-444e-43aa-882d-84dcde4c56c9");
 
-	private readonly Module _module;
+	private readonly WasmDocument _document;
 
-	public FunctionsNode(Module module)
+	public FunctionsNode(WasmDocument document)
 	{
-		_module = module;
+		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -50,13 +49,15 @@ internal class FunctionsNode : DocumentTreeNodeData, IDecompileSelf
 		// if (this.GetDocumentNode()?.Document is not WasmDocument wasmDocument)
 		// 	yield break;
 
-		for (var i = 0; i < _module.Functions.Count; i++)
-		{
-			var function = _module.Functions[i];
-			var code = _module.Codes[i];
-			var type = _module.Types[(int)function.Type];
+		var module = _document.Module;
 
-			yield return new FunctionNode(i, code, type);
+		for (var i = 0; i < module.Functions.Count; i++)
+		{
+			var function = module.Functions[i];
+			var code = module.Codes[i];
+			var type = module.Types[(int)function.Type];
+
+			yield return new FunctionNode(_document, i, code, type);
 		}
 	}
 }
@@ -65,12 +66,14 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("b2cdecbc-7f8b-464e-b3d2-fa2be4c3f68c");
 
+	private readonly WasmDocument _document;
 	private readonly int _index;
 	private readonly FunctionBody _code;
 	private readonly WebAssemblyType _type;
 
-	public FunctionNode(int index, FunctionBody code, WebAssemblyType type)
+	public FunctionNode(WasmDocument document, int index, FunctionBody code, WebAssemblyType type)
 	{
+		_document = document;
 		_index = index;
 		_code = code;
 		_type = type;
@@ -86,14 +89,14 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		var name = $"func_{_index}";
+		var name = _document.GetFunctionName(_index);
 		new TextColorWriter(output).FunctionDeclaration(name, _type);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
 		var dec = new DisassemblerDecompiler();
-		dec.Decompile(context, _index, _code, _type);
+		dec.Decompile(_document, context, _index, _code, _type);
 
 		return true;
 	}
