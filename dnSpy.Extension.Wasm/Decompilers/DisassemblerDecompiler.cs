@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using dnSpy.Contracts.Documents.Tabs.DocViewer;
 using dnSpy.Extension.Wasm.TreeView;
@@ -20,8 +21,21 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 		writer.EndLine();
 		writer.Indent();
 
+		WriteLocals(writer, code.Locals);
+
+		if (code.Locals.Any(l => l.Count > 0))
+			writer.EndLine();
+
+		WriteInstructions(writer, code.Code);
+
+		writer.DeIndent().Punctuation("}");
+		writer.EndLine();
+	}
+
+	public void WriteLocals(DecompilerWriter writer, IList<Local> locals)
+	{
 		int localIndex = 0;
-		foreach (var local in code.Locals)
+		foreach (var local in locals)
 		{
 			for (var i = 0; i < local.Count; i++)
 			{
@@ -30,12 +44,14 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				localIndex++;
 			}
 		}
+	}
 
-		if (code.Locals.Any(l => l.Count > 0))
-			writer.EndLine();
-
-		foreach (var instruction in code.Code)
+	public void WriteInstructions(DecompilerWriter writer, IList<Instruction> instructions)
+	{
+		for (var i = 0; i < instructions.Count; i++)
 		{
+			var instruction = instructions[i];
+
 			switch (instruction)
 			{
 				case BlockTypeInstruction block:
@@ -52,7 +68,10 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				case End:
 				{
 					writer.OpCode(instruction.OpCode);
-					writer.EndLine().DeIndent().Punctuation("}");
+
+					// only close current block if we're not at the last instruction
+					if (i != instructions.Count - 1)
+						writer.EndLine().DeIndent().Punctuation("}");
 					break;
 				}
 				case Branch branch:
