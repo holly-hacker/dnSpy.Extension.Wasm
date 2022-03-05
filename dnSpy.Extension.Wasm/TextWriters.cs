@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Linq;
 using dnSpy.Contracts.Decompiler;
 using dnSpy.Contracts.Text;
+using dnSpy.Extension.Wasm.Decompilers.References;
 using WebAssembly;
 
 namespace dnSpy.Extension.Wasm;
@@ -78,12 +79,25 @@ internal abstract class ArbitraryTextWriter
 
 	public ArbitraryTextWriter OpCode(OpCode code) => Write(code.ToInstruction(), BoxedTextColor.AsmMnemonic);
 
-	public ArbitraryTextWriter FunctionDeclaration(string name, WebAssemblyType type)
+	public ArbitraryTextWriter FunctionName(string name, int? globalIndex = null, bool isDefinition = false)
 	{
-		Keyword("fn").Space();
-		Write(name, BoxedTextColor.StaticMethod);
+		if (globalIndex.HasValue)
+		{
+			var reference = new FunctionReference(globalIndex.Value);
+			var flags = isDefinition ? DecompilerReferenceFlags.Definition : DecompilerReferenceFlags.None;
+			Write(name, BoxedTextColor.StaticMethod, reference, flags);
+		}
+		else
+		{
+			Write(name, BoxedTextColor.StaticMethod);
+		}
 
-		Punctuation("(");
+		return this;
+	}
+
+	public ArbitraryTextWriter FunctionDeclaration(string name, WebAssemblyType type, int? globalFunctionIndex = null, bool isDefinition = false)
+	{
+		Keyword("fn").Space().FunctionName(name, globalFunctionIndex, isDefinition).Punctuation("(");
 
 		bool firstParameter = true;
 		foreach (var parameter in type.Parameters)

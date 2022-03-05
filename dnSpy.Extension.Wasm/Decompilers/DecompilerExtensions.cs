@@ -10,6 +10,6 @@ internal static class DecompilerExtensions
 		var code = doc.Module.Codes[index];
 		var function = doc.Module.Functions[index];
 		var type = doc.Module.Types[(int)function.Type];
-		decompiler.Decompile(doc, writer, functionName, code.Locals, code.Code, type);
+		decompiler.Decompile(doc, writer, functionName, code.Locals, code.Code, type, index);
 	}
 }

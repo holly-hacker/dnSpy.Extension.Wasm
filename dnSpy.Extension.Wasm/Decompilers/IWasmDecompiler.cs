@@ -7,5 +7,5 @@ namespace dnSpy.Extension.Wasm.Decompilers;
 internal interface IWasmDecompiler
 {
 	void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code,
-		WebAssemblyType functionType);
+		WebAssemblyType functionType, int? globalIndex = null);
 }

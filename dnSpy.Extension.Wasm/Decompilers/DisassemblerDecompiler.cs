@@ -9,9 +9,10 @@ namespace dnSpy.Extension.Wasm.Decompilers;
 
 internal class DisassemblerDecompiler : IWasmDecompiler
 {
-	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType)
+	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType, int? globalIndex = null)
 	{
-		writer.FunctionDeclaration(name, functionType);
+		writer.FunctionDeclaration(name, functionType, globalIndex, true);
+
 		writer.EndLine();
 		writer.Punctuation("{");
 		writer.EndLine();
@@ -22,7 +23,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 		if (locals.Any(l => l.Count > 0))
 			writer.EndLine();
 
-		WriteInstructions(writer, code);
+		WriteInstructions(doc, writer, code);
 
 		writer.DeIndent().Punctuation("}");
 		writer.EndLine();
@@ -42,7 +43,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 		}
 	}
 
-	private void WriteInstructions(DecompilerWriter writer, IList<Instruction> instructions)
+	private void WriteInstructions(WasmDocument doc, DecompilerWriter writer, IList<Instruction> instructions)
 	{
 		for (var i = 0; i < instructions.Count; i++)
 		{
@@ -93,7 +94,10 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				}
 				case Call call:
 				{
-					writer.OpCode(instruction.OpCode).Space().Number(call.Index);
+
+					var function = doc.GetFunctionName((int)call.Index);
+					var type = doc.GetFunctionType((int)call.Index);
+					writer.OpCode(instruction.OpCode).Space().FunctionDeclaration(function, type, (int)call.Index, false);
 					break;
 				}
 				case CallIndirect callIndirect:

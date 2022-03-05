@@ -55,11 +55,11 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("97a6413a-36b5-42b4-b490-fb6b8e0cd713");
 
-	private readonly Import.Function _function;
+	public readonly Import.Function Function;
 
 	public FunctionImportNode(Import.Function function)
 	{
-		_function = function;
+		Function = function;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -70,7 +70,7 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
 		// TODO
-		new TextColorWriter(output).Text(_function.ToString());
+		new TextColorWriter(output).Text(Function.ToString());
 	}
 
 	public bool Decompile(IDecompileNodeContext context)

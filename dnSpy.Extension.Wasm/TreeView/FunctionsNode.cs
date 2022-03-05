@@ -62,12 +62,12 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 	public static readonly Guid MyGuid = new("b2cdecbc-7f8b-464e-b3d2-fa2be4c3f68c");
 
 	private readonly WasmDocument _document;
-	private readonly int _index;
+	public readonly int Index;
 
 	public FunctionNode(WasmDocument document, int index)
 	{
 		_document = document;
-		_index = index;
+		Index = index;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -80,8 +80,8 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		var name = _document.GetFunctionNameFromSectionIndex(_index);
-		var function = _document.Module.Functions[_index];
+		var name = _document.GetFunctionNameFromSectionIndex(Index);
+		var function = _document.Module.Functions[Index];
 		var type = _document.Module.Types[(int)function.Type];
 		new TextColorWriter(output).FunctionDeclaration(name, type);
 	}
@@ -90,7 +90,7 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 	{
 		var writer = new DecompilerWriter(context.Output);
 		var dec = new DisassemblerDecompiler();
-		dec.DecompileByFunctionIndex(_document, writer, _index);
+		dec.DecompileByFunctionIndex(_document, writer, Index);
 
 		return true;
 	}

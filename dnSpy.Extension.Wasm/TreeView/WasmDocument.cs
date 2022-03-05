@@ -105,7 +105,7 @@ internal class WasmDocument : DsDocument
 		return Module.Types[(int)typeIndex];
 	}
 
-	private T? TryGetImport<T>(int fullIndex, int importCount, out int sectionIndex) where T : Import
+	public T? TryGetImport<T>(int fullIndex, int importCount, out int sectionIndex) where T : Import
 	{
 		Debug.Assert(importCount <= Module.Imports.Count);
 
@@ -151,12 +151,11 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("bd2d0a98-c7ec-4d2a-ad77-fcc75cc8944d");
 
-	private readonly WasmDocument _document;
-
 	public WasmDocumentNode(WasmDocument document) : base(document)
 	{
-		_document = document;
 	}
+
+	public new WasmDocument Document => (WasmDocument)base.Document;
 
 	public override Guid Guid => MyGuid;
 
@@ -165,7 +164,7 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 	/// <remarks> Writes to the tree view node and tab header text </remarks>
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		output.WriteFilename(Path.GetFileName(_document.Filename));
+		output.WriteFilename(Path.GetFileName(Document.Filename));
 	}
 
 	/// <remarks> Writes to the editor pane </remarks>
@@ -176,14 +175,14 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 
 		var items = new[]
 		{
-			("Functions", _document.Module.Functions.Count),
-			("Elements", _document.Module.Elements.Count),
-			("Globals", _document.Module.Globals.Count),
-			("Types", _document.Module.Types.Count),
-			("Imports", _document.Module.Imports.Count),
-			("Exports", _document.Module.Exports.Count),
-			("Tables", _document.Module.Tables.Count),
-			("Memories", _document.Module.Memories.Count),
+			("Functions", Document.Module.Functions.Count),
+			("Elements", Document.Module.Elements.Count),
+			("Globals", Document.Module.Globals.Count),
+			("Types", Document.Module.Types.Count),
+			("Imports", Document.Module.Imports.Count),
+			("Exports", Document.Module.Exports.Count),
+			("Tables", Document.Module.Tables.Count),
+			("Memories", Document.Module.Memories.Count),
 		};
 
 		foreach ((string? name, int count) in items)
@@ -192,9 +191,9 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 			writer.EndLine();
 		}
 
-		if (_document.Module.Start != null)
+		if (Document.Module.Start != null)
 		{
-			writer.EndLine().Keyword("Start Function").Punctuation(": ").Number(_document.Module.Start.Value);
+			writer.EndLine().Keyword("Start Function").Punctuation(": ").Number(Document.Module.Start.Value);
 		}
 
 		return true;
@@ -202,18 +201,18 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		if (_document.Module.Data.Any())
-			yield return new DatasNode(_document);
-		if (_document.Module.Memories.Any())
-			yield return new MemoriesNode(_document);
-		if (_document.Module.Globals.Any())
-			yield return new GlobalsNode(_document);
-		if (_document.Module.Imports.Any())
-			yield return new ImportsNode(_document);
-		if (_document.Module.Exports.Any())
-			yield return new ExportsNode(_document);
-		if (_document.Module.Functions.Any())
-			yield return new FunctionsNode(_document);
+		if (Document.Module.Data.Any())
+			yield return new DatasNode(Document);
+		if (Document.Module.Memories.Any())
+			yield return new MemoriesNode(Document);
+		if (Document.Module.Globals.Any())
+			yield return new GlobalsNode(Document);
+		if (Document.Module.Imports.Any())
+			yield return new ImportsNode(Document);
+		if (Document.Module.Exports.Any())
+			yield return new ExportsNode(Document);
+		if (Document.Module.Functions.Any())
+			yield return new FunctionsNode(Document);
 	}
 }
 
