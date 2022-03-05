@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using dnSpy.Contracts.Decompiler;
@@ -10,6 +11,7 @@ namespace dnSpy.Extension.Wasm;
 internal class DecompilerWriter : ArbitraryTextWriter
 {
 	private readonly IDecompilerOutput _output;
+	private readonly Stack<(TextSpan, CodeBracesRangeFlags)> _braces = new();
 
 	public DecompilerWriter(IDecompilerOutput output)
 	{
@@ -34,6 +36,30 @@ internal class DecompilerWriter : ArbitraryTextWriter
 		return this;
 	}
 
+	public override ArbitraryTextWriter OpenBraceInternal(string text, CodeBracesRangeFlags flags)
+	{
+		// NOTE: could make flags optional and infer BraceKind from text
+
+		int braceStart = _output.NextPosition;
+		this.Punctuation(text);
+		int braceEnd = _output.NextPosition;
+
+		_braces.Push((TextSpan.FromBounds(braceStart, braceEnd), flags));
+		return this;
+	}
+
+	public override ArbitraryTextWriter CloseBraceInternal(string text)
+	{
+		int braceStart = _output.NextPosition;
+		this.Punctuation(text);
+		int braceEnd = _output.NextPosition;
+
+		var (startBraceSpan, flags) = _braces.Pop();
+		var endBraceSpan = TextSpan.FromBounds(braceStart, braceEnd);
+		_output.AddBracePair(startBraceSpan, endBraceSpan, flags);
+		return this;
+	}
+
 	public override ArbitraryTextWriter WriteInternal(string text, object color, object? reference = null, DecompilerReferenceFlags flags = DecompilerReferenceFlags.None)
 	{
 		_output.Write(text, reference, flags, color);
@@ -50,6 +76,9 @@ internal class TextColorWriter : ArbitraryTextWriter
 		_output = output;
 	}
 
+	public override ArbitraryTextWriter OpenBraceInternal(string text, CodeBracesRangeFlags flags) => this.Punctuation(text);
+	public override ArbitraryTextWriter CloseBraceInternal(string text) => this.Punctuation(text);
+
 	public override ArbitraryTextWriter WriteInternal(string text, object color, object? reference = null,
 		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None)
 	{
@@ -62,6 +91,9 @@ internal abstract class ArbitraryTextWriter
 {
 	public abstract ArbitraryTextWriter WriteInternal(string text, object color, object? reference = null,
 		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None);
+
+	public abstract ArbitraryTextWriter OpenBraceInternal(string text, CodeBracesRangeFlags flags);
+	public abstract ArbitraryTextWriter CloseBraceInternal(string text);
 }
 
 internal static class TextWriterExtensions
@@ -70,6 +102,18 @@ internal static class TextWriterExtensions
 		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None) where T : ArbitraryTextWriter
 	{
 		writer.WriteInternal(text, color, reference, flags);
+		return writer;
+	}
+
+	public static T OpenBrace<T>(this T writer, string text, CodeBracesRangeFlags flags) where T : ArbitraryTextWriter
+	{
+		writer.OpenBraceInternal(text, flags);
+		return writer;
+	}
+
+	public static T CloseBrace<T>(this T writer, string text) where T : ArbitraryTextWriter
+	{
+		writer.CloseBraceInternal(text);
 		return writer;
 	}
 
@@ -110,7 +154,7 @@ internal static class TextWriterExtensions
 	public static T FunctionDeclaration<T>(this T writer, string name, WebAssemblyType type, int? globalFunctionIndex = null, bool isDefinition = false)
 		where T : ArbitraryTextWriter
 	{
-		writer.Keyword("fn").Space().FunctionName(name, globalFunctionIndex, isDefinition).Punctuation("(");
+		writer.Keyword("fn").Space().FunctionName(name, globalFunctionIndex, isDefinition).OpenBrace("(", CodeBracesRangeFlags.Parentheses);
 
 		bool firstParameter = true;
 		foreach (var parameter in type.Parameters)
@@ -122,13 +166,13 @@ internal static class TextWriterExtensions
 			writer.Keyword(parameter.ToWasmType());
 		}
 
-		writer.Punctuation(")");
+		writer.CloseBrace(")");
 
 		if (type.Returns.Any())
 		{
 			writer.Punctuation(": ");
 
-			if (type.Returns.Count > 1) writer.Punctuation("(");
+			if (type.Returns.Count > 1) writer.OpenBrace("(", CodeBracesRangeFlags.Parentheses);
 
 			bool firstReturnParameter = true;
 			foreach (var returnParameter in type.Returns)
@@ -140,7 +184,7 @@ internal static class TextWriterExtensions
 				writer.Keyword(returnParameter.ToWasmType());
 			}
 
-			if (type.Returns.Count > 1) writer.Punctuation(")");
+			if (type.Returns.Count > 1) writer.CloseBrace(")");
 		}
 
 		return writer;

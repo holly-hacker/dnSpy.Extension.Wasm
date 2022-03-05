@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using dnSpy.Contracts.Decompiler;
 using dnSpy.Extension.Wasm.TreeView;
 using WebAssembly;
 using WebAssembly.Instructions;
@@ -12,7 +13,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType, int? globalIndex = null)
 	{
 		writer.FunctionDeclaration(name, functionType, globalIndex, true).EndLine();
-		writer.Punctuation("{").EndLine();
+		writer.OpenBrace("{", CodeBracesRangeFlags.LocalFunctionBraces).EndLine();
 		writer.Indent();
 
 		WriteLocals(writer, locals);
@@ -22,7 +23,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 		WriteInstructions(doc, writer, code);
 
-		writer.DeIndent().Punctuation("}").EndLine();
+		writer.DeIndent().CloseBrace("}").EndLine();
 	}
 
 	private void WriteLocals(DecompilerWriter writer, IEnumerable<Local> locals)
@@ -54,7 +55,10 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 					if (block.Type != BlockType.Empty)
 						writer.Keyword(block.Type.ToTypeString()).Space();
 
-					writer.Punctuation("{").Indent();
+					var flags = CodeBracesRangeFlags.BraceKind_CurlyBraces;
+					flags |= CodeBracesRangeFlags.BlockKind_Other;
+
+					writer.OpenBrace("{", flags).Indent();
 					break;
 				}
 				case End:
@@ -63,7 +67,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 					// only close current block if we're not at the last instruction
 					if (i != instructions.Count - 1)
-						writer.EndLine().DeIndent().Punctuation("}");
+						writer.EndLine().DeIndent().CloseBrace("}");
 					break;
 				}
 				case Branch branch:
@@ -101,7 +105,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				{
 					writer.OpCode(instruction.OpCode)
 						.Space()
-						.Punctuation("(")
+						.OpenBrace("(", CodeBracesRangeFlags.Parentheses)
 						.Text("align")
 						.Punctuation("=")
 						.Number((int)Math.Pow(2, (int)memImm.Flags))
@@ -109,7 +113,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 						.Text("offset")
 						.Punctuation("=")
 						.Number(memImm.Offset)
-						.Punctuation(")");
+						.CloseBrace(")");
 					break;
 				}
 				case Constant<int> constant:
