@@ -25,7 +25,7 @@ internal class DatasNode : DocumentTreeNodeData, IDecompileSelf
 	public override Guid Guid => MyGuid;
 	public override NodePathName NodePathName => new(Guid);
 
-	protected override ImageReference GetIcon(IDotNetImageService dnImgMgr) => DsImages.MemoryWindow;
+	protected override ImageReference GetIcon(IDotNetImageService dnImgMgr) => DsImages.Binary;
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{

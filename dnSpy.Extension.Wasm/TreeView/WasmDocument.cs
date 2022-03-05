@@ -160,23 +160,29 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 	public bool Decompile(IDecompileNodeContext context)
 	{
 		context.ContentTypeString = Constants.ContentTypeWasmInfo;
+		var writer = new DecompilerWriter(context.Output);
 
 		var items = new[]
 		{
 			("Functions", _document.Module.Functions.Count),
-			("Codes", _document.Module.Codes.Count),
+			("Elements", _document.Module.Elements.Count),
+			("Globals", _document.Module.Globals.Count),
 			("Types", _document.Module.Types.Count),
 			("Imports", _document.Module.Imports.Count),
 			("Exports", _document.Module.Exports.Count),
 			("Tables", _document.Module.Tables.Count),
+			("Memories", _document.Module.Memories.Count),
 		};
 
 		foreach ((string? name, int count) in items)
 		{
-			context.Output.Write(name, BoxedTextColor.Keyword);
-			context.Output.Write(": ", BoxedTextColor.Operator);
-			context.Output.Write(count.ToString(), BoxedTextColor.Number);
-			context.Output.WriteLine();
+			writer.Keyword(name).Punctuation(": ").Number(count);
+			writer.EndLine();
+		}
+
+		if (_document.Module.Start != null)
+		{
+			writer.EndLine().Keyword("Start Function").Punctuation(": ").Number(_document.Module.Start.Value);
 		}
 
 		return true;
@@ -185,6 +191,7 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
 		yield return new DatasNode(_document);
+		yield return new MemoriesNode(_document);
 		yield return new ImportsNode(_document);
 		yield return new ExportsNode(_document);
 		yield return new FunctionsNode(_document);
