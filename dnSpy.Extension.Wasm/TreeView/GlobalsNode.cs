@@ -91,7 +91,17 @@ internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
 		writer.EndLine().EndLine();
 
 		var disassembler = new DisassemblerDecompiler();
+		writer.FunctionDeclaration("initialize", new WebAssemblyType
+		{
+			Form = FunctionType.Function,
+			Parameters = new List<WebAssemblyValueType>(),
+			Returns = new List<WebAssemblyValueType> { _global.ContentType },
+		});
+		writer.EndLine().Punctuation("{");
+		writer.EndLine().Indent();
 		disassembler.WriteInstructions(writer, _global.InitializerExpression);
+		writer.DeIndent().Punctuation("}");
+		writer.EndLine();
 
 		return true;
 	}

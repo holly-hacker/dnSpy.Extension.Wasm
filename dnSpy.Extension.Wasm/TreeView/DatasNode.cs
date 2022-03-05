@@ -7,6 +7,7 @@ using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
+using dnSpy.Extension.Wasm.Decompilers;
 using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
@@ -76,7 +77,53 @@ internal class DataNode : HexViewerNode
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		if (_data.InitializerExpression.Any())
-			yield return new InstructionListNode(_wasmDocument, _data.InitializerExpression, "Initializer");
+		yield return new DataInitializerNode(_wasmDocument, _data, _index);
+	}
+}
+
+internal class DataInitializerNode : DocumentTreeNodeData, IDecompileSelf
+{
+	private readonly WasmDocument _wasmDocument;
+	private readonly Data _data;
+	private readonly int _index;
+
+	public static readonly Guid MyGuid = new("dbf2fa46-d3a7-4ae4-90ff-96a20be6bff1");
+
+	public DataInitializerNode(WasmDocument wasmDocument, Data data, int index)
+	{
+		_wasmDocument = wasmDocument;
+		_data = data;
+		_index = index;
+	}
+
+	public override Guid Guid => MyGuid;
+	public override NodePathName NodePathName => new(Guid);
+
+	protected override ImageReference GetIcon(IDotNetImageService dnImgMgr) => DsImages.Assembly;
+
+	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
+	{
+		output.Write("Initializer");
+	}
+
+	public bool Decompile(IDecompileNodeContext context)
+	{
+		var writer = new DecompilerWriter(context.Output);
+
+		var disassembler = new DisassemblerDecompiler();
+		writer.FunctionDeclaration("get_offset", new WebAssemblyType
+		{
+			Form = FunctionType.Function,
+			Parameters = new List<WebAssemblyValueType>(),
+			Returns = new List<WebAssemblyValueType> { WebAssemblyValueType.Int32 },
+		});
+		writer.EndLine().Punctuation("{");
+		writer.EndLine();
+		writer.Indent();
+		disassembler.WriteInstructions(writer, _data.InitializerExpression);
+		writer.DeIndent().Punctuation("}");
+		writer.EndLine();
+
+		return true;
 	}
 }
