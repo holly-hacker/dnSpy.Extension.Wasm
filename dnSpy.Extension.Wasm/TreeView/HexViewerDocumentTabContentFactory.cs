@@ -79,5 +79,5 @@ internal class HexViewerDocumentTabUiContext : DocumentTabUIContext
 
 	public override object? UIObject { get; }
 	public override IInputElement? FocusedElement => null;
-	public override FrameworkElement? ZoomElement => null;
+	public override FrameworkElement? ZoomElement => UIObject as FrameworkElement;
 }
