@@ -11,11 +11,8 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 {
 	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType, int? globalIndex = null)
 	{
-		writer.FunctionDeclaration(name, functionType, globalIndex, true);
-
-		writer.EndLine();
-		writer.Punctuation("{");
-		writer.EndLine();
+		writer.FunctionDeclaration(name, functionType, globalIndex, true).EndLine();
+		writer.Punctuation("{").EndLine();
 		writer.Indent();
 
 		WriteLocals(writer, locals);
@@ -25,8 +22,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 		WriteInstructions(doc, writer, code);
 
-		writer.DeIndent().Punctuation("}");
-		writer.EndLine();
+		writer.DeIndent().Punctuation("}").EndLine();
 	}
 
 	private void WriteLocals(DecompilerWriter writer, IEnumerable<Local> locals)
@@ -58,8 +54,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 					if (block.Type != BlockType.Empty)
 						writer.Keyword(block.Type.ToTypeString()).Space();
 
-					writer.Punctuation("{");
-					writer.Indent();
+					writer.Punctuation("{").Indent();
 					break;
 				}
 				case End:
@@ -85,16 +80,13 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				{
 					writer.OpCode(instruction.OpCode).Space();
 					foreach (uint label in branchTable.Labels)
-					{
 						writer.Number(label).Space();
-					}
 
 					writer.Number(branchTable.DefaultLabel);
 					break;
 				}
 				case Call call:
 				{
-
 					var function = doc.GetFunctionName((int)call.Index);
 					var type = doc.GetFunctionType((int)call.Index);
 					writer.OpCode(instruction.OpCode).Space().FunctionDeclaration(function, type, (int)call.Index, false);

@@ -86,9 +86,7 @@ internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
 		writer.Keyword("global").Space().Text(name).Punctuation(": ");
 		if (_global.IsMutable)
 			writer.Keyword("mut").Space();
-		writer.Keyword(_global.ContentType.ToWasmType());
-
-		writer.EndLine().EndLine();
+		writer.Keyword(_global.ContentType.ToWasmType()).EndLine().EndLine();
 
 		var disassembler = new DisassemblerDecompiler();
 		disassembler.Decompile(_document, writer, "initialize", new List<Local>(), _global.InitializerExpression, new WebAssemblyType

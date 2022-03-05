@@ -34,7 +34,7 @@ internal class DecompilerWriter : ArbitraryTextWriter
 		return this;
 	}
 
-	protected override ArbitraryTextWriter Write(string text, object color, object? reference = null, DecompilerReferenceFlags flags = DecompilerReferenceFlags.None)
+	public override ArbitraryTextWriter WriteInternal(string text, object color, object? reference = null, DecompilerReferenceFlags flags = DecompilerReferenceFlags.None)
 	{
 		_output.Write(text, reference, flags, color);
 		return this;
@@ -50,7 +50,7 @@ internal class TextColorWriter : ArbitraryTextWriter
 		_output = output;
 	}
 
-	protected override ArbitraryTextWriter Write(string text, object color, object? reference = null,
+	public override ArbitraryTextWriter WriteInternal(string text, object color, object? reference = null,
 		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None)
 	{
 		_output.Write(color, text);
@@ -60,76 +60,89 @@ internal class TextColorWriter : ArbitraryTextWriter
 
 internal abstract class ArbitraryTextWriter
 {
-	protected abstract ArbitraryTextWriter Write(string text, object color, object? reference = null,
+	public abstract ArbitraryTextWriter WriteInternal(string text, object color, object? reference = null,
 		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None);
+}
 
-	public ArbitraryTextWriter Text(string text) => Write(text, BoxedTextColor.Text);
-	public ArbitraryTextWriter Space() => Text(" ");
+internal static class TextWriterExtensions
+{
+	private static T Write<T>(this T writer, string text, object color, object? reference = null,
+		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None) where T : ArbitraryTextWriter
+	{
+		writer.WriteInternal(text, color, reference, flags);
+		return writer;
+	}
 
-	public ArbitraryTextWriter Punctuation(string text) => Write(text, BoxedTextColor.Punctuation);
+	public static T Text<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Text);
 
-	public ArbitraryTextWriter Number(int number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
-	public ArbitraryTextWriter Number(long number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
-	public ArbitraryTextWriter Number(float number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
-	public ArbitraryTextWriter Number(double number) => Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+	public static T Space<T>(this T writer) where T : ArbitraryTextWriter => writer.Text(" ");
 
-	public ArbitraryTextWriter Local(string text) => Write(text, BoxedTextColor.Local);
+	public static T Punctuation<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Punctuation);
 
-	public ArbitraryTextWriter Keyword(string text) => Write(text, BoxedTextColor.Keyword);
+	public static T Number<T>(this T writer, int number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+	public static T Number<T>(this T writer, long number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+	public static T Number<T>(this T writer, float number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+	public static T Number<T>(this T writer, double number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 
-	public ArbitraryTextWriter OpCode(OpCode code) => Write(code.ToInstruction(), BoxedTextColor.AsmMnemonic);
+	public static T Local<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Local);
 
-	public ArbitraryTextWriter FunctionName(string name, int? globalIndex = null, bool isDefinition = false)
+	public static T Keyword<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Keyword);
+
+	public static T OpCode<T>(this T writer, OpCode code) where T : ArbitraryTextWriter => writer.Write(code.ToInstruction(), BoxedTextColor.AsmMnemonic);
+
+	public static T FunctionName<T>(this T writer, string name, int? globalIndex = null, bool isDefinition = false)
+		where T : ArbitraryTextWriter
 	{
 		if (globalIndex.HasValue)
 		{
 			var reference = new FunctionReference(globalIndex.Value);
 			var flags = isDefinition ? DecompilerReferenceFlags.Definition : DecompilerReferenceFlags.None;
-			Write(name, BoxedTextColor.StaticMethod, reference, flags);
+			writer.Write(name, BoxedTextColor.StaticMethod, reference, flags);
 		}
 		else
 		{
-			Write(name, BoxedTextColor.StaticMethod);
+			writer.Write(name, BoxedTextColor.StaticMethod);
 		}
 
-		return this;
+		return writer;
 	}
 
-	public ArbitraryTextWriter FunctionDeclaration(string name, WebAssemblyType type, int? globalFunctionIndex = null, bool isDefinition = false)
+	public static T FunctionDeclaration<T>(this T writer, string name, WebAssemblyType type, int? globalFunctionIndex = null, bool isDefinition = false)
+		where T : ArbitraryTextWriter
 	{
-		Keyword("fn").Space().FunctionName(name, globalFunctionIndex, isDefinition).Punctuation("(");
+		writer.Keyword("fn").Space().FunctionName(name, globalFunctionIndex, isDefinition).Punctuation("(");
 
 		bool firstParameter = true;
 		foreach (var parameter in type.Parameters)
 		{
 			if (!firstParameter)
-				Punctuation(", ");
+				writer.Punctuation(", ");
 			firstParameter = false;
 
-			Keyword(parameter.ToWasmType());
+			writer.Keyword(parameter.ToWasmType());
 		}
 
-		Punctuation(")");
+		writer.Punctuation(")");
 
 		if (type.Returns.Any())
 		{
-			Punctuation(": ");
+			writer.Punctuation(": ");
 
-			if (type.Returns.Count > 1) Punctuation("(");
+			if (type.Returns.Count > 1) writer.Punctuation("(");
 
 			bool firstReturnParameter = true;
 			foreach (var returnParameter in type.Returns)
 			{
 				if (!firstReturnParameter)
-					Punctuation(", ");
+					writer.Punctuation(", ");
 				firstReturnParameter = false;
 
-				Keyword(returnParameter.ToWasmType());
+				writer.Keyword(returnParameter.ToWasmType());
 			}
 
-			if (type.Returns.Count > 1) Punctuation(")");
+			if (type.Returns.Count > 1) writer.Punctuation(")");
 		}
 
-		return this;
+		return writer;
 	}
 }
