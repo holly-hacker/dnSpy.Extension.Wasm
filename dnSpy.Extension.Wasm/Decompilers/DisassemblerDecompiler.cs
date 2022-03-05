@@ -135,6 +135,8 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 					writer.OpCode(instruction.OpCode).Space().Number(constant.Value);
 					break;
 				}
+				case MemoryGrow:
+				case MemorySize:
 				case SimpleInstruction:
 				{
 					writer.OpCode(instruction.OpCode);
