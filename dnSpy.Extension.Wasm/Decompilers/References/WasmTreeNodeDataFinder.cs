@@ -35,12 +35,10 @@ internal class WasmTreeNodeDataFinder : IDocumentTreeNodeDataFinder
 					foreach (var node in documentNode.TreeNode.Descendants().Where(d => d.Data is ImportsNode))
 						node.EnsureChildrenLoaded();
 
-					// relying on Import.Function being reference equal, which is not ideal
-					// alternative would be storing an index in the FunctionImportNode which is a lot better
 					return documentNode.TreeNode
 						.Descendants()
 						.Select(d => d.Data).OfType<FunctionImportNode>()
-						.FirstOrDefault(f => f.Function == import);
+						.FirstOrDefault(f => f.FunctionIndex == funcRef.GlobalFunctionIndex);
 				}
 				else
 				{
@@ -66,7 +64,7 @@ internal class WasmTreeNodeDataFinder : IDocumentTreeNodeDataFinder
 					return documentNode.TreeNode
 						.Descendants()
 						.Select(d => d.Data).OfType<GlobalImportNode>()
-						.FirstOrDefault(f => f.Global == import);
+						.FirstOrDefault(f => f.GlobalIndex == globalRef.Index);
 				}
 				else
 				{

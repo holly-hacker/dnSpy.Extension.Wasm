@@ -40,13 +40,14 @@ internal class ImportsNode : DocumentTreeNodeData, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
+		var (functionIndex, tableIndex, memoryIndex, globalIndex) = (0, 0, 0, 0);
 		return _document.Module.Imports.Select(import => (TreeNodeData)(import switch
 		{
-			Import.Function function => new FunctionImportNode(function),
-			Import.Table table => new TableImportNode(table),
-			Import.Memory memory => new MemoryImportNode(memory),
-			Import.Global global => new GlobalImportNode(global),
-			_ => throw new ArgumentOutOfRangeException(),
+			Import.Function function => new FunctionImportNode(_document, function, functionIndex++),
+			Import.Table table => new TableImportNode(table, tableIndex++),
+			Import.Memory memory => new MemoryImportNode(memory, memoryIndex++),
+			Import.Global global => new GlobalImportNode(global, globalIndex++),
+			_ => throw new ArgumentOutOfRangeException()
 		}));
 	}
 }
@@ -55,12 +56,17 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("97a6413a-36b5-42b4-b490-fb6b8e0cd713");
 
-	public readonly Import.Function Function;
+	private readonly WasmDocument _document;
+	private readonly Import.Function _function;
 
-	public FunctionImportNode(Import.Function function)
+	public FunctionImportNode(WasmDocument document, Import.Function function, int functionIndex)
 	{
-		Function = function;
+		FunctionIndex = functionIndex;
+		_document = document;
+		_function = function;
 	}
+
+	public int FunctionIndex { get; }
 
 	public override Guid Guid => MyGuid;
 	public override NodePathName NodePathName => new(Guid);
@@ -69,14 +75,20 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		// TODO
-		new TextColorWriter(output).Text(Function.ToString());
+		var writer = new TextColorWriter(output);
+
+		var type = _document.Module.Types[(int)_function.TypeIndex];
+		writer.FunctionDeclaration($"{_function.Module}::{_function.Field}", type);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		var writer = new DecompilerWriter(context.Output);
+
+		var type = _document.Module.Types[(int)_function.TypeIndex];
+		writer.Keyword("import").Space().FunctionDeclaration($"{_function.Module}::{_function.Field}", type).EndLine();
+
+		return true;
 	}
 }
 
@@ -86,10 +98,13 @@ internal class TableImportNode : DocumentTreeNodeData, IDecompileSelf
 
 	private readonly Import.Table _table;
 
-	public TableImportNode(Import.Table table)
+	public TableImportNode(Import.Table table, int tableIndex)
 	{
+		TableIndex = tableIndex;
 		_table = table;
 	}
+
+	public int TableIndex { get; }
 
 	public override Guid Guid => MyGuid;
 	public override NodePathName NodePathName => new(Guid);
@@ -115,10 +130,13 @@ internal class MemoryImportNode : DocumentTreeNodeData, IDecompileSelf
 
 	private readonly Import.Memory _memory;
 
-	public MemoryImportNode(Import.Memory memory)
+	public MemoryImportNode(Import.Memory memory, int memoryIndex)
 	{
+		MemoryIndex = memoryIndex;
 		_memory = memory;
 	}
+
+	public int MemoryIndex { get; }
 
 	public override Guid Guid => MyGuid;
 	public override NodePathName NodePathName => new(Guid);
@@ -142,12 +160,15 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("264203ea-16c1-4c38-b6bd-f99bd5ca4c49");
 
-	public GlobalImportNode(Import.Global global)
+	private readonly Import.Global _global;
+
+	public GlobalImportNode(Import.Global global, int globalIndex)
 	{
-		Global = global;
+		_global = global;
+		GlobalIndex = globalIndex;
 	}
 
-	public Import.Global Global { get; }
+	public int GlobalIndex { get; }
 
 	public override Guid Guid => MyGuid;
 	public override NodePathName NodePathName => new(Guid);
@@ -157,7 +178,7 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
 		// TODO
-		new TextColorWriter(output).Text(Global.ToString());
+		new TextColorWriter(output).Text(_global.ToString());
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
