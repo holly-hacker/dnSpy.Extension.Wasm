@@ -74,6 +74,17 @@ internal class WasmDocument : DsDocument
 		};
 	}
 
+	public string GetGlobalNameFromSectionIndex(int index)
+	{
+		var export = Module.Exports.SingleOrDefault(e => e.Kind == ExternalKind.Global && e.Index - ImportedGlobalCount == index);
+
+		return export switch
+		{
+			{ } => export.Name,
+			_ => $"global_{index}",
+		};
+	}
+
 	public string GetFunctionName(int fullIndex)
 	{
 		return TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) switch
@@ -194,6 +205,8 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 			yield return new DatasNode(_document);
 		if (_document.Module.Memories.Any())
 			yield return new MemoriesNode(_document);
+		if (_document.Module.Globals.Any())
+			yield return new GlobalsNode(_document);
 		if (_document.Module.Imports.Any())
 			yield return new ImportsNode(_document);
 		if (_document.Module.Exports.Any())
