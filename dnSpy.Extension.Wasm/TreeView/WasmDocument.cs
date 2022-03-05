@@ -198,7 +198,9 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 	/// <remarks> Writes to the tree view node and tab header text </remarks>
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		output.WriteFilename(Path.GetFileName(Document.Filename));
+		output.WriteFilename(options == DocumentNodeWriteOptions.ToolTip
+			? Document.Filename
+			: Path.GetFileName(Document.Filename));
 	}
 
 	/// <remarks> Writes to the editor pane </remarks>
@@ -206,6 +208,8 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 	{
 		context.ContentTypeString = Constants.ContentTypeWasmInfo;
 		var writer = new DecompilerWriter(context.Output);
+
+		writer.WriteFilename(Document.Filename).EndLine().EndLine();
 
 		var items = new[]
 		{

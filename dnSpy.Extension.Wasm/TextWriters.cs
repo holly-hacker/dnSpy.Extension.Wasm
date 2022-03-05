@@ -88,13 +88,16 @@ internal class TextColorWriter : ArbitraryTextWriter
 	}
 }
 
-internal abstract class ArbitraryTextWriter
+internal abstract class ArbitraryTextWriter : ITextColorWriter
 {
 	public abstract ArbitraryTextWriter WriteInternal(string text, object color, object? reference = null,
 		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None);
 
 	public abstract ArbitraryTextWriter OpenBraceInternal(string text, CodeBracesRangeFlags flags);
 	public abstract ArbitraryTextWriter CloseBraceInternal(string text);
+
+	void ITextColorWriter.Write(object color, string? text) => WriteInternal(text ?? "", color);
+	void ITextColorWriter.Write(TextColor color, string? text) => WriteInternal(text ?? "", color);
 }
 
 internal static class TextWriterExtensions
