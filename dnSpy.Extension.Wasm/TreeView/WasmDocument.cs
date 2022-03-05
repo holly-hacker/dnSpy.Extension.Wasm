@@ -68,20 +68,9 @@ internal class WasmDocument : DsDocument
 		return export switch
 		{
 			{ } => export.Name,
-			_ when NameSection?.FunctionNames?.ContainsKey(index + ImportedFunctionCount) == true
-				=> NameSection.FunctionNames[index + ImportedFunctionCount],
+			_ when NameSection?.FunctionNames?.TryGetValue(index + ImportedFunctionCount, out string foundName) == true
+				=> foundName!,
 			_ => $"function_{index}",
-		};
-	}
-
-	public string GetGlobalNameFromSectionIndex(int index)
-	{
-		var export = Module.Exports.SingleOrDefault(e => e.Kind == ExternalKind.Global && e.Index - ImportedGlobalCount == index);
-
-		return export switch
-		{
-			{ } => export.Name,
-			_ => $"global_{index}",
 		};
 	}
 
@@ -103,6 +92,51 @@ internal class WasmDocument : DsDocument
 		};
 
 		return Module.Types[(int)typeIndex];
+	}
+
+	public string GetGlobalNameFromSectionIndex(int index)
+	{
+		var export = Module.Exports.SingleOrDefault(e => e.Kind == ExternalKind.Global && e.Index - ImportedGlobalCount == index);
+
+		return export switch
+		{
+			{ } => export.Name,
+			_ => $"global_{index}",
+		};
+	}
+
+	public string GetGlobalName(int fullIndex)
+	{
+		return TryGetImport<Import.Global>(fullIndex, ImportedGlobalCount, out int sectionIndex) switch
+		{
+			{ } import => $"{import.Module}::{import.Field}",
+			_ => GetGlobalNameFromSectionIndex(sectionIndex),
+		};
+	}
+
+	public WebAssemblyValueType GetGlobalType(int fullIndex)
+	{
+		return TryGetImport<Import.Global>(fullIndex, ImportedGlobalCount, out int sectionIndex) switch
+		{
+			{ } import => import.ContentType,
+			_ => Module.Globals[sectionIndex].ContentType,
+		};
+	}
+
+	public bool GetGlobalMutable(int fullIndex)
+	{
+		return TryGetImport<Import.Global>(fullIndex, ImportedGlobalCount, out int sectionIndex) switch
+		{
+			{ } import => import.IsMutable,
+			_ => Module.Globals[sectionIndex].IsMutable,
+		};
+	}
+
+	public string? TryGetLocalName(int function, int local)
+	{
+		return NameSection?.LocalNames?.TryGetValue((function + ImportedFunctionCount, local), out string found) == true
+			? found
+			: null;
 	}
 
 	public T? TryGetImport<T>(int fullIndex, int importCount, out int sectionIndex) where T : Import

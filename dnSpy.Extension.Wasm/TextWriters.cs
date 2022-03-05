@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using dnSpy.Contracts.Decompiler;
 using dnSpy.Contracts.Text;
+using dnSpy.Extension.Wasm.Decompilers;
 using dnSpy.Extension.Wasm.Decompilers.References;
 using WebAssembly;
 
@@ -128,7 +129,19 @@ internal static class TextWriterExtensions
 	public static T Number<T>(this T writer, float number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 	public static T Number<T>(this T writer, double number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 
-	public static T Local<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Local);
+	public static T Local<T>(this T writer, string text, LocalReference? reference, bool isDefinition) where T : ArbitraryTextWriter
+	{
+		var flags = DecompilerReferenceFlags.Local;
+		if (isDefinition) flags |= DecompilerReferenceFlags.Definition;
+
+		return writer.Write(text, BoxedTextColor.Local, reference, flags);
+	}
+
+	public static T Global<T>(this T writer, string text, GlobalReference? reference, bool isDefinition) where T : ArbitraryTextWriter
+	{
+		return writer.Write(text, BoxedTextColor.StaticField, reference,
+			isDefinition ? DecompilerReferenceFlags.Definition : DecompilerReferenceFlags.None);
+	}
 
 	public static T Keyword<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Keyword);
 
@@ -151,17 +164,25 @@ internal static class TextWriterExtensions
 		return writer;
 	}
 
-	public static T FunctionDeclaration<T>(this T writer, string name, WebAssemblyType type, int? globalFunctionIndex = null, bool isDefinition = false)
+	public static T FunctionDeclaration<T>(this T writer, string name, WebAssemblyType type,
+		int? globalFunctionIndex = null, bool isDefinition = false, VariableInfo? vars = null)
 		where T : ArbitraryTextWriter
 	{
 		writer.Keyword("fn").Space().FunctionName(name, globalFunctionIndex, isDefinition).OpenBrace("(", CodeBracesRangeFlags.Parentheses);
 
 		bool firstParameter = true;
-		foreach (var parameter in type.Parameters)
+		for (var paramIdx = 0; paramIdx < type.Parameters.Count; paramIdx++)
 		{
+			var parameter = type.Parameters[paramIdx];
 			if (!firstParameter)
 				writer.Punctuation(", ");
 			firstParameter = false;
+
+			if (vars != null)
+			{
+				var local = vars.Locals[paramIdx];
+				writer.Local(local.name, local.reference, true).Punctuation(": ");
+			}
 
 			writer.Keyword(parameter.ToWasmType());
 		}

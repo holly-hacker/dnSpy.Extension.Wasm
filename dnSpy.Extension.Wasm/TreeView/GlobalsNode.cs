@@ -51,14 +51,15 @@ internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
 
 	private readonly WasmDocument _document;
 	private readonly Global _global;
-	private readonly int _index;
 
 	public GlobalNode(WasmDocument document, Global global, int index)
 	{
 		_document = document;
 		_global = global;
-		_index = index;
+		Index = index;
 	}
+
+	public int Index { get; }
 
 	public override Guid Guid => MyGuid;
 	public override NodePathName NodePathName => new(Guid);
@@ -68,7 +69,7 @@ internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		string name = _document.GetGlobalNameFromSectionIndex(_index);
+		string name = _document.GetGlobalNameFromSectionIndex(Index);
 		var writer = new TextColorWriter(output);
 
 		writer.Keyword("global").Space().Text(name).Punctuation(": ");
@@ -79,7 +80,7 @@ internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		string name = _document.GetGlobalNameFromSectionIndex(_index);
+		string name = _document.GetGlobalNameFromSectionIndex(Index);
 		var writer = new DecompilerWriter(context.Output);
 
 		// same as above

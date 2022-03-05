@@ -14,3 +14,25 @@ internal class FunctionReference : IWasmReference
 
 	public int GlobalFunctionIndex { get; }
 }
+
+public class LocalReference : IWasmReference
+{
+	public LocalReference(int index, bool isArgument)
+	{
+		Index = index;
+		IsArgument = isArgument;
+	}
+
+	public int Index { get; }
+	public bool IsArgument { get; }
+}
+
+public class GlobalReference : IWasmReference
+{
+	public GlobalReference(int index)
+	{
+		Index = index;
+	}
+
+	public int Index { get; }
+}

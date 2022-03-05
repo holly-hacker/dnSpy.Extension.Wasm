@@ -12,35 +12,33 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 {
 	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType, int? globalIndex = null)
 	{
-		writer.FunctionDeclaration(name, functionType, globalIndex, true).EndLine();
+		var vars = new VariableInfo(doc, locals, functionType, globalIndex);
+
+		// TODO: write parameter names
+		writer.FunctionDeclaration(name, functionType, globalIndex, true, vars).EndLine();
 		writer.OpenBrace("{", CodeBracesRangeFlags.LocalFunctionBraces).EndLine();
 		writer.Indent();
 
-		WriteLocals(writer, locals);
+		WriteLocals(vars, writer);
 
-		if (locals.Any(l => l.Count > 0))
+		if (vars.Locals.Any(l => !l.isParameter))
 			writer.EndLine();
 
-		WriteInstructions(doc, writer, code);
+		WriteInstructions(vars, doc, writer, code);
 
 		writer.DeIndent().CloseBrace("}").EndLine();
 	}
 
-	private void WriteLocals(DecompilerWriter writer, IEnumerable<Local> locals)
+	private void WriteLocals(VariableInfo vars, DecompilerWriter writer)
 	{
-		int localIndex = 0;
-		foreach (var local in locals)
+		foreach ((string name, var type, _, var reference) in vars.Locals.Where(l => !l.isParameter))
 		{
-			for (var i = 0; i < local.Count; i++)
-			{
-				writer.Local("local_" + localIndex).Punctuation(": ").Keyword(local.Type.ToWasmType());
-				writer.EndLine();
-				localIndex++;
-			}
+			writer.Local(name, reference, true).Punctuation(": ").Keyword(type.ToWasmType());
+			writer.EndLine();
 		}
 	}
 
-	private void WriteInstructions(WasmDocument doc, DecompilerWriter writer, IList<Instruction> instructions)
+	private void WriteInstructions(VariableInfo vars, WasmDocument doc, DecompilerWriter writer, IList<Instruction> instructions)
 	{
 		for (var i = 0; i < instructions.Count; i++)
 		{
@@ -93,6 +91,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				{
 					var function = doc.GetFunctionName((int)call.Index);
 					var type = doc.GetFunctionType((int)call.Index);
+					// dont want to pass in a decompiler context here
 					writer.OpCode(instruction.OpCode).Space().FunctionDeclaration(function, type, (int)call.Index, false);
 					break;
 				}
@@ -143,7 +142,27 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				}
 				case VariableAccessInstruction va:
 				{
-					writer.OpCode(instruction.OpCode).Space().Number(va.Index);
+					writer.OpCode(instruction.OpCode).Space();
+
+					switch (va)
+					{
+						case LocalGet or LocalSet or LocalTee:
+						{
+							var local = vars.Locals[(int)va.Index];
+							writer.Local(local.name, local.reference, false);
+							break;
+						}
+						case GlobalGet or GlobalSet:
+						{
+							var global = vars.GetGlobal((int)va.Index);
+							writer.Global(global.name, global.reference, false);
+							break;
+						}
+						default:
+							writer.Number(va.Index);
+							break;
+					}
+
 					break;
 				}
 				default:

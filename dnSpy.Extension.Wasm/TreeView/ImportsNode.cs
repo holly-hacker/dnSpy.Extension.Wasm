@@ -142,12 +142,12 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("264203ea-16c1-4c38-b6bd-f99bd5ca4c49");
 
-	private readonly Import.Global _global;
-
 	public GlobalImportNode(Import.Global global)
 	{
-		_global = global;
+		Global = global;
 	}
+
+	public Import.Global Global { get; }
 
 	public override Guid Guid => MyGuid;
 	public override NodePathName NodePathName => new(Guid);
@@ -157,7 +157,7 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
 		// TODO
-		new TextColorWriter(output).Text(_global.ToString());
+		new TextColorWriter(output).Text(Global.ToString());
 	}
 
 	public bool Decompile(IDecompileNodeContext context)

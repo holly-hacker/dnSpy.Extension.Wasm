@@ -53,6 +53,32 @@ internal class WasmTreeNodeDataFinder : IDocumentTreeNodeDataFinder
 						.FirstOrDefault(f => f.Index == sectionIndex);
 				}
 			}
+			case GlobalReference globalRef:
+			{
+				documentNode.TreeNode.EnsureChildrenLoaded();
+				var import = document.TryGetImport<Import.Global>(globalRef.Index, document.ImportedGlobalCount, out int sectionIndex);
+
+				if (import is not null)
+				{
+					foreach (var node in documentNode.TreeNode.Descendants().Where(d => d.Data is ImportsNode))
+						node.EnsureChildrenLoaded();
+
+					return documentNode.TreeNode
+						.Descendants()
+						.Select(d => d.Data).OfType<GlobalImportNode>()
+						.FirstOrDefault(f => f.Global == import);
+				}
+				else
+				{
+					foreach (var node in documentNode.TreeNode.Descendants().Where(d => d.Data is GlobalsNode))
+						node.EnsureChildrenLoaded();
+
+					return documentNode.TreeNode
+						.Descendants()
+						.Select(d => d.Data).OfType<GlobalNode>()
+						.FirstOrDefault(f => f.Index == sectionIndex);
+				}
+			}
 		}
 
 		return null;
