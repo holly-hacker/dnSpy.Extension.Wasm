@@ -88,8 +88,9 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
+		var writer = new DecompilerWriter(context.Output);
 		var dec = new DisassemblerDecompiler();
-		dec.DecompileByFunctionIndex(_document, context, _index);
+		dec.DecompileByFunctionIndex(_document, writer, _index);
 
 		return true;
 	}

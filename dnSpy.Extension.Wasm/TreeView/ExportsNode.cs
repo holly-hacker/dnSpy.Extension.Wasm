@@ -6,6 +6,7 @@ using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
+using dnSpy.Extension.Wasm.Decompilers;
 using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
@@ -45,9 +46,8 @@ internal class ExportsNode : DocumentTreeNodeData, IDecompileSelf
 			switch (export.Kind)
 			{
 				case ExternalKind.Function:
-					var function = module.Functions[(int)export.Index - _document.ImportedFunctionCount];
-					var functionType = module.Types[(int)function.Type];
-					yield return new FunctionExportNode(export.Name, functionType);
+					int globalFunctionIndex = (int)export.Index;
+					yield return new FunctionExportNode(_document, export.Name, globalFunctionIndex);
 					break;
 				case ExternalKind.Table:
 					var table = module.Tables[(int)export.Index - _document.ImportedTableCount];
@@ -72,13 +72,15 @@ internal class FunctionExportNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("7e8e4b7f-7cc0-4caa-bd2f-b08705c7c0c7");
 
+	private readonly WasmDocument _document;
 	private readonly string _name;
-	private readonly WebAssemblyType _type;
+	private readonly int _globalIndex;
 
-	public FunctionExportNode(string name, WebAssemblyType type)
+	public FunctionExportNode(WasmDocument document, string name, int globalIndex)
 	{
+		_document = document;
 		_name = name;
-		_type = type;
+		_globalIndex = globalIndex;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -88,13 +90,19 @@ internal class FunctionExportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		new TextColorWriter(output).FunctionDeclaration(_name, _type);
+		var type = _document.GetFunctionType(_globalIndex);
+		new TextColorWriter(output).FunctionDeclaration(_name, type);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		if (_globalIndex < _document.ImportedFunctionCount)
+			return false;
+
+		var writer = new DecompilerWriter(context.Output);
+		var decompiler = new DisassemblerDecompiler();
+		decompiler.DecompileByFunctionIndex(_document, writer, _globalIndex - _document.ImportedFunctionCount);
+		return true;
 	}
 }
 
@@ -199,7 +207,7 @@ internal class GlobalExportNode : DocumentTreeNodeData, IDecompileSelf
 			.Text(_name)
 			.Punctuation(":")
 			.Space()
-			.Text(_global.ToString()!);
+			.Text(_global.ToString());
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
