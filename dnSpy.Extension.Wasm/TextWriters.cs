@@ -210,4 +210,44 @@ internal static class TextWriterExtensions
 
 		return writer;
 	}
+
+	public static T FunctionSignature<T>(this T writer, WebAssemblyType type)
+		where T : ArbitraryTextWriter
+	{
+		writer.OpenBrace("(", CodeBracesRangeFlags.Parentheses);
+
+		bool firstParameter = true;
+		for (var paramIdx = 0; paramIdx < type.Parameters.Count; paramIdx++)
+		{
+			var parameter = type.Parameters[paramIdx];
+			if (!firstParameter)
+				writer.Punctuation(", ");
+			firstParameter = false;
+
+			writer.Keyword(parameter.ToWasmType());
+		}
+
+		writer.CloseBrace(")");
+
+		if (type.Returns.Any())
+		{
+			writer.Punctuation(": ");
+
+			if (type.Returns.Count > 1) writer.OpenBrace("(", CodeBracesRangeFlags.Parentheses);
+
+			bool firstReturnParameter = true;
+			foreach (var returnParameter in type.Returns)
+			{
+				if (!firstReturnParameter)
+					writer.Punctuation(", ");
+				firstReturnParameter = false;
+
+				writer.Keyword(returnParameter.ToWasmType());
+			}
+
+			if (type.Returns.Count > 1) writer.CloseBrace(")");
+		}
+
+		return writer;
+	}
 }

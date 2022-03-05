@@ -97,7 +97,8 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 				}
 				case CallIndirect callIndirect:
 				{
-					writer.OpCode(instruction.OpCode).Space().Number(callIndirect.Type);
+					var type = doc.Module.Types[(int)callIndirect.Type];
+					writer.OpCode(instruction.OpCode).Space().FunctionSignature(type);
 					break;
 				}
 				case MemoryImmediateInstruction memImm:
