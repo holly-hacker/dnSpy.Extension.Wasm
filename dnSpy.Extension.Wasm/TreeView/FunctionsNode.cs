@@ -7,7 +7,6 @@ using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
 using dnSpy.Extension.Wasm.Decompilers;
-using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
 
@@ -53,11 +52,7 @@ internal class FunctionsNode : DocumentTreeNodeData, IDecompileSelf
 
 		for (var i = 0; i < module.Functions.Count; i++)
 		{
-			var function = module.Functions[i];
-			var code = module.Codes[i];
-			var type = module.Types[(int)function.Type];
-
-			yield return new FunctionNode(_document, i, code, type);
+			yield return new FunctionNode(_document, i);
 		}
 	}
 }
@@ -68,15 +63,11 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	private readonly WasmDocument _document;
 	private readonly int _index;
-	private readonly FunctionBody _code;
-	private readonly WebAssemblyType _type;
 
-	public FunctionNode(WasmDocument document, int index, FunctionBody code, WebAssemblyType type)
+	public FunctionNode(WasmDocument document, int index)
 	{
 		_document = document;
 		_index = index;
-		_code = code;
-		_type = type;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -90,13 +81,15 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
 		var name = _document.GetFunctionNameFromSectionIndex(_index);
-		new TextColorWriter(output).FunctionDeclaration(name, _type);
+		var function = _document.Module.Functions[_index];
+		var type = _document.Module.Types[(int)function.Type];
+		new TextColorWriter(output).FunctionDeclaration(name, type);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
 		var dec = new DisassemblerDecompiler();
-		dec.Decompile(_document, context, _index, _code, _type);
+		dec.DecompileByFunctionIndex(_document, context, _index);
 
 		return true;
 	}

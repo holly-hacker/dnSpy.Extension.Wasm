@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using dnSpy.Contracts.Documents.Tabs.DocViewer;
 using dnSpy.Extension.Wasm.TreeView;
 using WebAssembly;
 using WebAssembly.Instructions;
@@ -10,29 +9,26 @@ namespace dnSpy.Extension.Wasm.Decompilers;
 
 internal class DisassemblerDecompiler : IWasmDecompiler
 {
-	public void Decompile(WasmDocument doc, IDecompileNodeContext context, int index, FunctionBody code, WebAssemblyType type)
+	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType)
 	{
-		var writer = new DecompilerWriter(context.Output);
-
-		string functionName = doc.GetFunctionNameFromSectionIndex(index);
-		writer.FunctionDeclaration(functionName, type);
+		writer.FunctionDeclaration(name, functionType);
 		writer.EndLine();
 		writer.Punctuation("{");
 		writer.EndLine();
 		writer.Indent();
 
-		WriteLocals(writer, code.Locals);
+		WriteLocals(writer, locals);
 
-		if (code.Locals.Any(l => l.Count > 0))
+		if (locals.Any(l => l.Count > 0))
 			writer.EndLine();
 
-		WriteInstructions(writer, code.Code);
+		WriteInstructions(writer, code);
 
 		writer.DeIndent().Punctuation("}");
 		writer.EndLine();
 	}
 
-	public void WriteLocals(DecompilerWriter writer, IList<Local> locals)
+	private void WriteLocals(DecompilerWriter writer, IEnumerable<Local> locals)
 	{
 		int localIndex = 0;
 		foreach (var local in locals)
@@ -46,7 +42,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 		}
 	}
 
-	public void WriteInstructions(DecompilerWriter writer, IList<Instruction> instructions)
+	private void WriteInstructions(DecompilerWriter writer, IList<Instruction> instructions)
 	{
 		for (var i = 0; i < instructions.Count; i++)
 		{

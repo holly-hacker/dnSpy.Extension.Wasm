@@ -77,23 +77,21 @@ internal class DataNode : HexViewerNode
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		yield return new DataInitializerNode(_wasmDocument, _data, _index);
+		yield return new DataInitializerNode(_wasmDocument, _data);
 	}
 }
 
 internal class DataInitializerNode : DocumentTreeNodeData, IDecompileSelf
 {
-	private readonly WasmDocument _wasmDocument;
-	private readonly Data _data;
-	private readonly int _index;
-
 	public static readonly Guid MyGuid = new("dbf2fa46-d3a7-4ae4-90ff-96a20be6bff1");
 
-	public DataInitializerNode(WasmDocument wasmDocument, Data data, int index)
+	private readonly WasmDocument _document;
+	private readonly Data _data;
+
+	public DataInitializerNode(WasmDocument document, Data data)
 	{
-		_wasmDocument = wasmDocument;
+		_document = document;
 		_data = data;
-		_index = index;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -111,18 +109,12 @@ internal class DataInitializerNode : DocumentTreeNodeData, IDecompileSelf
 		var writer = new DecompilerWriter(context.Output);
 
 		var disassembler = new DisassemblerDecompiler();
-		writer.FunctionDeclaration("get_offset", new WebAssemblyType
+		disassembler.Decompile(_document, writer, "get_offset", new List<Local>(), _data.InitializerExpression, new WebAssemblyType
 		{
 			Form = FunctionType.Function,
 			Parameters = new List<WebAssemblyValueType>(),
 			Returns = new List<WebAssemblyValueType> { WebAssemblyValueType.Int32 },
 		});
-		writer.EndLine().Punctuation("{");
-		writer.EndLine();
-		writer.Indent();
-		disassembler.WriteInstructions(writer, _data.InitializerExpression);
-		writer.DeIndent().Punctuation("}");
-		writer.EndLine();
 
 		return true;
 	}
