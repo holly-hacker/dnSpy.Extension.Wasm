@@ -190,11 +190,16 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		yield return new DatasNode(_document);
-		yield return new MemoriesNode(_document);
-		yield return new ImportsNode(_document);
-		yield return new ExportsNode(_document);
-		yield return new FunctionsNode(_document);
+		if (_document.Module.Data.Any())
+			yield return new DatasNode(_document);
+		if (_document.Module.Memories.Any())
+			yield return new MemoriesNode(_document);
+		if (_document.Module.Imports.Any())
+			yield return new ImportsNode(_document);
+		if (_document.Module.Exports.Any())
+			yield return new ExportsNode(_document);
+		if (_document.Module.Functions.Any())
+			yield return new FunctionsNode(_document);
 	}
 }
 

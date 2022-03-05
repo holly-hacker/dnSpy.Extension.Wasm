@@ -25,7 +25,7 @@ internal class MemoriesNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		output.Write("Memory");
+		output.Write("Memories");
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
