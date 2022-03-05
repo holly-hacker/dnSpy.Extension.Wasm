@@ -109,10 +109,11 @@ internal class WasmDocument : DsDocument
 	{
 		Debug.Assert(importCount <= Module.Imports.Count);
 
-		if (fullIndex <= importCount)
+		if (fullIndex < importCount)
 		{
 			sectionIndex = -1;
-			return Module.Imports.OfType<T>().Skip(fullIndex).FirstOrDefault();
+			return Module.Imports.OfType<T>().Skip(fullIndex).FirstOrDefault()
+			       ?? throw new Exception($"Could not find import of type {typeof(T)} and index {fullIndex}");
 		}
 
 		sectionIndex = fullIndex - importCount;
