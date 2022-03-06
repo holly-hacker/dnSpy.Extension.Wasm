@@ -156,6 +156,16 @@ internal static class TextWriterExtensions
 
 	public static T Keyword<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Keyword);
 
+	public static T Limits<T>(this T writer, ResizableLimits limits) where T : ArbitraryTextWriter
+	{
+		writer.Number(limits.Minimum).Punctuation("-");
+		if (limits.Maximum != null)
+			writer.Number(limits.Maximum.Value);
+		else
+			writer.Text("...");
+		return writer;
+	}
+
 	public static T OpCode<T>(this T writer, OpCode code) where T : ArbitraryTextWriter => writer.Write(code.ToInstruction(), BoxedTextColor.AsmMnemonic);
 
 	public static T FunctionName<T>(this T writer, string name, int? globalIndex = null, bool isDefinition = false)

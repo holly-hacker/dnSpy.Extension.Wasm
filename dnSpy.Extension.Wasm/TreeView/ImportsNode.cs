@@ -86,7 +86,8 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 		var writer = new DecompilerWriter(context.Output);
 
 		var type = _document.Module.Types[(int)_function.TypeIndex];
-		writer.Keyword("import").Space().FunctionDeclaration($"{_function.Module}::{_function.Field}", type).EndLine();
+		writer.Keyword("import").Space()
+			.FunctionDeclaration($"{_function.Module}::{_function.Field}", type);
 
 		return true;
 	}
@@ -113,14 +114,20 @@ internal class TableImportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		// TODO
-		new TextColorWriter(output).Text(_table.ToString());
+		new TextColorWriter(output)
+			.Keyword("table").Space()
+			.Text($"{_table.Module}::{_table.Field}").Punctuation(": ")
+			.Limits(_table.Definition!.ResizableLimits);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		new DecompilerWriter(context.Output)
+			.Keyword("import").Space()
+			.Keyword("table").Space()
+			.Text($"{_table.Module}::{_table.Field}").Punctuation(": ")
+			.Limits(_table.Definition!.ResizableLimits);
+		return true;
 	}
 }
 
@@ -145,14 +152,20 @@ internal class MemoryImportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		// TODO
-		new TextColorWriter(output).Text(_memory.ToString());
+		new TextColorWriter(output)
+			.Keyword("memory").Space()
+			.Text($"{_memory.Module}::{_memory.Field}").Punctuation(": ")
+			.Limits(_memory.Type!.ResizableLimits);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		new DecompilerWriter(context.Output)
+			.Keyword("import").Space()
+			.Keyword("memory").Space()
+			.Text($"{_memory.Module}::{_memory.Field}").Punctuation(": ")
+			.Limits(_memory.Type!.ResizableLimits);
+		return true;
 	}
 }
 
@@ -177,13 +190,26 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		// TODO
-		new TextColorWriter(output).Text(_global.ToString());
+		var writer = new TextColorWriter(output);
+
+		writer.Keyword("global").Space()
+			.Text($"{_global.Module}::{_global.Field}").Punctuation(": ");
+		if (_global.IsMutable)
+			writer.Keyword("mut").Space();
+		writer.Keyword(_global.ContentType.ToWasmType());
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		var writer = new DecompilerWriter(context.Output);
+
+		writer.Keyword("import").Space()
+			.Keyword("global").Space()
+			.Text($"{_global.Module}::{_global.Field}").Punctuation(": ");
+		if (_global.IsMutable)
+			writer.Keyword("mut").Space();
+		writer.Keyword(_global.ContentType.ToWasmType());
+
+		return true;
 	}
 }

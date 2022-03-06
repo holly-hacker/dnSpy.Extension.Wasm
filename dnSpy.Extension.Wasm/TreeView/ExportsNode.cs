@@ -59,7 +59,7 @@ internal class ExportsNode : DocumentTreeNodeData, IDecompileSelf
 					break;
 				case ExternalKind.Global:
 					var global = module.Globals[(int)export.Index - _document.ImportedGlobalCount];
-					yield return new GlobalExportNode(export.Name, global);
+					yield return new GlobalExportNode(_document, export.Name, global);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
@@ -126,20 +126,20 @@ internal class TableExportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		// TODO
 		new TextColorWriter(output)
-			.Text("Table")
-			.Space()
-			.Text(_name)
-			.Punctuation(":")
-			.Space()
-			.Text(_table.ToString());
+			.Keyword("table").Space()
+			.Text(_name).Punctuation(": ")
+			.Limits(_table.ResizableLimits);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		new DecompilerWriter(context.Output)
+			.Keyword("export").Space()
+			.Keyword("table").Space()
+			.Text(_name).Punctuation(": ")
+			.Limits(_table.ResizableLimits);
+		return true;
 	}
 }
 
@@ -163,20 +163,20 @@ internal class MemoryExportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		// TODO
 		new TextColorWriter(output)
-			.Text("Memory")
-			.Space()
-			.Text(_name)
-			.Punctuation(":")
-			.Space()
-			.Text(_memory.ToString());
+			.Keyword("memory").Space()
+			.Text(_name).Punctuation(": ")
+			.Limits(_memory.ResizableLimits);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		new DecompilerWriter(context.Output)
+			.Keyword("export").Space()
+			.Keyword("memory").Space()
+			.Text(_name).Punctuation(": ")
+			.Limits(_memory.ResizableLimits);
+		return true;
 	}
 }
 
@@ -184,11 +184,13 @@ internal class GlobalExportNode : DocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("b3f9e9d0-6d28-4fcb-8040-86598533b1f6");
 
+	private readonly WasmDocument _document;
 	private readonly string _name;
 	private readonly Global _global;
 
-	public GlobalExportNode(string name, Global memory)
+	public GlobalExportNode(WasmDocument document, string name, Global memory)
 	{
+		_document = document;
 		_name = name;
 		_global = memory;
 	}
@@ -200,19 +202,35 @@ internal class GlobalExportNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		// TODO
-		new TextColorWriter(output)
-			.Text("Global")
-			.Space()
-			.Text(_name)
-			.Punctuation(":")
-			.Space()
-			.Text(_global.ToString());
+		var writer = new TextColorWriter(output);
+
+		writer.Keyword("global").Space()
+			.Text(_name).Punctuation(": ");
+		if (_global.IsMutable)
+			writer.Keyword("mut").Space();
+		writer.Keyword(_global.ContentType.ToWasmType());
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		// TODO
-		return false;
+		var writer = new DecompilerWriter(context.Output);
+
+		// same as above
+		writer.Keyword("export").Space()
+			.Keyword("global").Space()
+			.Text(_name).Punctuation(": ");
+		if (_global.IsMutable)
+			writer.Keyword("mut").Space();
+		writer.Keyword(_global.ContentType.ToWasmType()).EndLine().EndLine();
+
+		var disassembler = new DisassemblerDecompiler();
+		disassembler.Decompile(_document, writer, "initialize", new List<Local>(), _global.InitializerExpression, new WebAssemblyType
+		{
+			Form = FunctionType.Function,
+			Parameters = new List<WebAssemblyValueType>(),
+			Returns = new List<WebAssemblyValueType> { _global.ContentType },
+		});
+
+		return true;
 	}
 }

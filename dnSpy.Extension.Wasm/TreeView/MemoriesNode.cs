@@ -35,15 +35,8 @@ internal class MemoriesNode : DocumentTreeNodeData, IDecompileSelf
 		for (var i = 0; i < _document.Module.Memories.Count; i++)
 		{
 			var moduleMemory = _document.Module.Memories[i];
-			writer.Keyword("memory").Space().Number(i).Punctuation(": ");
-
-			writer.Number(moduleMemory.ResizableLimits.Minimum).Punctuation("-");
-			if (moduleMemory.ResizableLimits.Maximum != null)
-				writer.Number(moduleMemory.ResizableLimits.Maximum.Value);
-			else
-				writer.Text("...");
-
-			writer.EndLine();
+			writer.Keyword("memory").Space().Number(i).Punctuation(": ")
+				.Limits(moduleMemory.ResizableLimits).EndLine();
 		}
 
 		return true;
