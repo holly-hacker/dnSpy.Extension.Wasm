@@ -132,6 +132,14 @@ internal static class TextWriterExtensions
 	public static T Number<T>(this T writer, float number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 	public static T Number<T>(this T writer, double number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 
+	public static T Label<T>(this T writer, string text, object? reference = null, bool isDefinition = false) where T : ArbitraryTextWriter
+	{
+		var flags = DecompilerReferenceFlags.Local;
+		if (isDefinition) flags |= DecompilerReferenceFlags.Definition;
+
+		return writer.Write(text, BoxedTextColor.Label, reference, flags);
+	}
+
 	public static T Local<T>(this T writer, string text, LocalReference? reference, bool isDefinition) where T : ArbitraryTextWriter
 	{
 		var flags = DecompilerReferenceFlags.Local;

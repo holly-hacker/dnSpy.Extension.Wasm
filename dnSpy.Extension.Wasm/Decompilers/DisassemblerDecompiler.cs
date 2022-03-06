@@ -40,6 +40,8 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 	private void WriteInstructions(VariableInfo vars, WasmDocument doc, DecompilerWriter writer, IList<Instruction> instructions)
 	{
+		var labelStack = new Stack<BlockReference>();
+
 		for (var i = 0; i < instructions.Count; i++)
 		{
 			var instruction = instructions[i];
@@ -56,7 +58,9 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 					var flags = CodeBracesRangeFlags.BraceKind_CurlyBraces;
 					flags |= CodeBracesRangeFlags.BlockKind_Other;
 
-					writer.OpenBrace("{", flags).Indent();
+					var label = new BlockReference(labelStack.Count);
+					writer.Label($"'{label}", label, true).Space().OpenBrace("{", flags).Indent();
+					labelStack.Push(label);
 					break;
 				}
 				case End:
@@ -65,24 +69,32 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 					// only close current block if we're not at the last instruction
 					if (i != instructions.Count - 1)
+					{
 						writer.EndLine().DeIndent().CloseBrace("}");
+						labelStack.Pop();
+					}
 					break;
 				}
 				case Branch branch:
 				{
-					writer.OpCode(instruction.OpCode).Space().Number(branch.Index);
+					var label = labelStack.ElementAt((int)branch.Index);
+					writer.OpCode(instruction.OpCode).Space().Label(label.ToString(), label);
 					break;
 				}
 				case BranchIf branchIf:
 				{
-					writer.OpCode(instruction.OpCode).Space().Number(branchIf.Index);
+					var label = labelStack.ElementAt((int)branchIf.Index);
+					writer.OpCode(instruction.OpCode).Space().Label(label.ToString(), label);
 					break;
 				}
 				case BranchTable branchTable:
 				{
 					writer.OpCode(instruction.OpCode).Space();
-					foreach (uint label in branchTable.Labels)
-						writer.Number(label).Space();
+					foreach (uint labelIndex in branchTable.Labels)
+					{
+						var label = labelStack.ElementAt((int)labelIndex);
+						writer.Label(label.ToString(), label).Space();
+					}
 
 					writer.Number(branchTable.DefaultLabel);
 					break;
@@ -177,6 +189,21 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 			}
 
 			writer.EndLine();
+		}
+	}
+
+	private class BlockReference
+	{
+		private readonly int _index;
+
+		public BlockReference(int index)
+		{
+			_index = index;
+		}
+
+		public override string ToString()
+		{
+			return $"block_{_index}";
 		}
 	}
 }
