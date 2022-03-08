@@ -78,7 +78,7 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 		var writer = new TextColorWriter(output);
 
 		var type = _document.Module.Types[(int)_function.TypeIndex];
-		writer.FunctionDeclaration($"{_function.Module}::{_function.Field}", type);
+		writer.FunctionDeclaration(_function.GetFullName(), type);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
@@ -87,7 +87,7 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 
 		var type = _document.Module.Types[(int)_function.TypeIndex];
 		writer.Keyword("import").Space()
-			.FunctionDeclaration($"{_function.Module}::{_function.Field}", type);
+			.FunctionDeclaration(_function.GetFullName(), type);
 
 		return true;
 	}
@@ -116,7 +116,7 @@ internal class TableImportNode : DocumentTreeNodeData, IDecompileSelf
 	{
 		new TextColorWriter(output)
 			.Keyword("table").Space()
-			.Text($"{_table.Module}::{_table.Field}").Punctuation(": ")
+			.Text(_table.GetFullName()).Punctuation(": ")
 			.Limits(_table.Definition!.ResizableLimits);
 	}
 
@@ -125,7 +125,7 @@ internal class TableImportNode : DocumentTreeNodeData, IDecompileSelf
 		new DecompilerWriter(context.Output)
 			.Keyword("import").Space()
 			.Keyword("table").Space()
-			.Text($"{_table.Module}::{_table.Field}").Punctuation(": ")
+			.Text(_table.GetFullName()).Punctuation(": ")
 			.Limits(_table.Definition!.ResizableLimits);
 		return true;
 	}
@@ -154,7 +154,7 @@ internal class MemoryImportNode : DocumentTreeNodeData, IDecompileSelf
 	{
 		new TextColorWriter(output)
 			.Keyword("memory").Space()
-			.Text($"{_memory.Module}::{_memory.Field}").Punctuation(": ")
+			.Text(_memory.GetFullName()).Punctuation(": ")
 			.Limits(_memory.Type!.ResizableLimits);
 	}
 
@@ -163,7 +163,7 @@ internal class MemoryImportNode : DocumentTreeNodeData, IDecompileSelf
 		new DecompilerWriter(context.Output)
 			.Keyword("import").Space()
 			.Keyword("memory").Space()
-			.Text($"{_memory.Module}::{_memory.Field}").Punctuation(": ")
+			.Text(_memory.GetFullName()).Punctuation(": ")
 			.Limits(_memory.Type!.ResizableLimits);
 		return true;
 	}
@@ -193,7 +193,7 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 		var writer = new TextColorWriter(output);
 
 		writer.Keyword("global").Space()
-			.Text($"{_global.Module}::{_global.Field}").Punctuation(": ");
+			.Text(_global.GetFullName()).Punctuation(": ");
 		if (_global.IsMutable)
 			writer.Keyword("mut").Space();
 		writer.Type(_global.ContentType);
@@ -205,7 +205,7 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 
 		writer.Keyword("import").Space()
 			.Keyword("global").Space()
-			.Text($"{_global.Module}::{_global.Field}").Punctuation(": ");
+			.Text(_global.GetFullName()).Punctuation(": ");
 		if (_global.IsMutable)
 			writer.Keyword("mut").Space();
 		writer.Type(_global.ContentType);

@@ -78,7 +78,7 @@ internal class WasmDocument : DsDocument
 	{
 		return TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) switch
 		{
-			{ } import => $"{import.Module}::{import.Field}",
+			{ } import => import.GetFullName(),
 			_ => GetFunctionNameFromSectionIndex(sectionIndex),
 		};
 	}
@@ -109,7 +109,7 @@ internal class WasmDocument : DsDocument
 	{
 		return TryGetImport<Import.Global>(fullIndex, ImportedGlobalCount, out int sectionIndex) switch
 		{
-			{ } import => $"{import.Module}::{import.Field}",
+			{ } import => import.GetFullName(),
 			_ => GetGlobalNameFromSectionIndex(sectionIndex),
 		};
 	}

@@ -37,6 +37,8 @@ public static class WasmUtils
 			.Name;
 	}
 
+	public static string GetFullName(this Import import) => $"{import.Module}::{import.Field}";
+
 	public static uint ReadULEB128(this BinaryReader br)
 	{
 		uint val = 0;
