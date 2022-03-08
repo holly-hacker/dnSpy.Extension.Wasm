@@ -5,6 +5,8 @@ post_bump_hooks = []
 
 [changelog]
 path = "CHANGELOG.md"
-authors = []
+authors = [
+    { signature = "HoLLy", username = "HoLLy" }
+]
 
 [bump_profiles]
