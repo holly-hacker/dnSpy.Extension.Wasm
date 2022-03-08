@@ -21,7 +21,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 		WriteLocals(vars, writer);
 
-		if (vars.Locals.Any(l => !l.isParameter))
+		if (vars.Locals.Any(l => !l.IsArgument))
 			writer.EndLine();
 
 		WriteInstructions(vars, doc, writer, code);
@@ -31,9 +31,9 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 	private void WriteLocals(VariableInfo vars, DecompilerWriter writer)
 	{
-		foreach ((string name, var type, _, var reference) in vars.Locals.Where(l => !l.isParameter))
+		foreach (var local in vars.Locals.Where(l => !l.IsArgument))
 		{
-			writer.Local(name, reference, true).Punctuation(": ").Keyword(type.ToWasmType());
+			writer.Local(local.Name, local, true).Punctuation(": ").Keyword(local.Type.ToWasmType());
 			writer.EndLine();
 		}
 	}
@@ -164,13 +164,13 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 						case LocalGet or LocalSet or LocalTee:
 						{
 							var local = vars.Locals[(int)va.Index];
-							writer.Local(local.name, local.reference, false);
+							writer.Local(local.Name, local, false);
 							break;
 						}
 						case GlobalGet or GlobalSet:
 						{
 							var global = vars.GetGlobal((int)va.Index);
-							writer.Global(global.name, global.reference, false);
+							writer.Global(global.Name, global, false);
 							break;
 						}
 						default:

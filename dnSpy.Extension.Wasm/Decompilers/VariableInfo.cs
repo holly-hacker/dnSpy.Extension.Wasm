@@ -10,9 +10,9 @@ internal class VariableInfo
 	private readonly WasmDocument _document;
 	private readonly int? _globalFunctionIndex;
 
-	private readonly Dictionary<int, (string name, WebAssemblyValueType type, GlobalReference reference)> _globals = new();
+	private readonly Dictionary<int, GlobalReference> _globals = new();
 
-	private readonly List<(string name, WebAssemblyValueType type, bool isParameter, LocalReference reference)> _locals = new();
+	private readonly List<LocalReference> _locals = new();
 
 	public VariableInfo(WasmDocument document, IList<Local> locals, WebAssemblyType functionType, int? globalFunctionIndex)
 	{
@@ -31,7 +31,7 @@ internal class VariableInfo
 				AddLocal(local.Type, localIndex++);
 	}
 
-	public IReadOnlyList<(string name, WebAssemblyValueType type, bool isParameter, LocalReference reference)> Locals => _locals.AsReadOnly();
+	public IReadOnlyList<LocalReference> Locals => _locals.AsReadOnly();
 
 	public int ParamCount { get; private set; }
 
@@ -43,7 +43,7 @@ internal class VariableInfo
 
 		name ??= $"arg_{i}";
 
-		_locals.Add((name, type, true, new LocalReference(i, true)));
+		_locals.Add(new LocalReference(name, type, i, true));
 		ParamCount++;
 	}
 
@@ -55,18 +55,18 @@ internal class VariableInfo
 
 		name ??= $"var_{i}";
 
-		_locals.Add((name, type, false, new LocalReference(i, false)));
+		_locals.Add(new LocalReference(name, type, i, false));
 	}
 
-	public (string name, WebAssemblyValueType type, GlobalReference reference) GetGlobal(int index)
+	public GlobalReference GetGlobal(int index)
 	{
 		if (_globals.TryGetValue(index, out var ret))
 			return ret;
 
-		return _globals[index] = (
+		return _globals[index] = new GlobalReference(
 			_document.GetGlobalName(index),
 			_document.GetGlobalType(index),
-			new GlobalReference(index)
-		);
+			_document.GetGlobalMutable(index),
+			index);
 	}
 }

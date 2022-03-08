@@ -202,7 +202,7 @@ internal static class TextWriterExtensions
 			if (vars != null)
 			{
 				var local = vars.Locals[paramIdx];
-				writer.Local(local.name, local.reference, true).Punctuation(": ");
+				writer.Local(local.Name, local, true).Punctuation(": ");
 			}
 
 			writer.Keyword(parameter.ToWasmType());
