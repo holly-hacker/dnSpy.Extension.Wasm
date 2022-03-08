@@ -17,7 +17,7 @@ public class LocalGlobalToolTipProvider : IDocumentViewerToolTipProvider
 				var writer = new TextColorWriter(toolTipProvider.Output);
 				writer.Keyword(local.IsArgument ? "param" : "local").Space()
 					.Local(local.Name, local, false).Punctuation(": ")
-					.Keyword(local.Type.ToWasmType());
+					.Type(local.Type);
 				return toolTipProvider.Create();
 			}
 			case GlobalReference global:
@@ -28,7 +28,7 @@ public class LocalGlobalToolTipProvider : IDocumentViewerToolTipProvider
 				writer.Keyword("global").Space()
 					.Global(global.Name, global, false).Punctuation(": ");
 				if (global.Mutable) writer.Keyword("mut").Space();
-				writer.Keyword(global.Type.ToWasmType());
+				writer.Type(global.Type);
 				return toolTipProvider.Create();
 			}
 			default:

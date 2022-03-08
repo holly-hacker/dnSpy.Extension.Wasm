@@ -33,7 +33,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 	{
 		foreach (var local in vars.Locals.Where(l => !l.IsArgument))
 		{
-			writer.Local(local.Name, local, true).Punctuation(": ").Keyword(local.Type.ToWasmType());
+			writer.Local(local.Name, local, true).Punctuation(": ").Type(local.Type);
 			writer.EndLine();
 		}
 	}

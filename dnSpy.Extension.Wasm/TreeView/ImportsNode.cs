@@ -196,7 +196,7 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 			.Text($"{_global.Module}::{_global.Field}").Punctuation(": ");
 		if (_global.IsMutable)
 			writer.Keyword("mut").Space();
-		writer.Keyword(_global.ContentType.ToWasmType());
+		writer.Type(_global.ContentType);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
@@ -208,7 +208,7 @@ internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
 			.Text($"{_global.Module}::{_global.Field}").Punctuation(": ");
 		if (_global.IsMutable)
 			writer.Keyword("mut").Space();
-		writer.Keyword(_global.ContentType.ToWasmType());
+		writer.Type(_global.ContentType);
 
 		return true;
 	}

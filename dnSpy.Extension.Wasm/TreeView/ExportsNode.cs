@@ -208,7 +208,7 @@ internal class GlobalExportNode : DocumentTreeNodeData, IDecompileSelf
 			.Text(_name).Punctuation(": ");
 		if (_global.IsMutable)
 			writer.Keyword("mut").Space();
-		writer.Keyword(_global.ContentType.ToWasmType());
+		writer.Type(_global.ContentType);
 	}
 
 	public bool Decompile(IDecompileNodeContext context)
@@ -221,7 +221,7 @@ internal class GlobalExportNode : DocumentTreeNodeData, IDecompileSelf
 			.Text(_name).Punctuation(": ");
 		if (_global.IsMutable)
 			writer.Keyword("mut").Space();
-		writer.Keyword(_global.ContentType.ToWasmType()).EndLine().EndLine();
+		writer.Type(_global.ContentType).EndLine().EndLine();
 
 		var disassembler = new DisassemblerDecompiler();
 		disassembler.Decompile(_document, writer, "initialize", new List<Local>(), _global.InitializerExpression, new WebAssemblyType

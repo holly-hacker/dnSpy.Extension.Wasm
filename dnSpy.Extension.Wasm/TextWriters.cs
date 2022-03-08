@@ -155,6 +155,7 @@ internal static class TextWriterExtensions
 	}
 
 	public static T Keyword<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Keyword);
+	public static T Type<T>(this T writer, WebAssemblyValueType type) where T : ArbitraryTextWriter => writer.Keyword(type.ToWasmType());
 
 	public static T Limits<T>(this T writer, ResizableLimits limits) where T : ArbitraryTextWriter
 	{
@@ -205,7 +206,7 @@ internal static class TextWriterExtensions
 				writer.Local(local.Name, local, true).Punctuation(": ");
 			}
 
-			writer.Keyword(parameter.ToWasmType());
+			writer.Type(parameter);
 		}
 
 		writer.CloseBrace(")");
@@ -223,7 +224,7 @@ internal static class TextWriterExtensions
 					writer.Punctuation(", ");
 				firstReturnParameter = false;
 
-				writer.Keyword(returnParameter.ToWasmType());
+				writer.Type(returnParameter);
 			}
 
 			if (type.Returns.Count > 1) writer.CloseBrace(")");
@@ -238,14 +239,13 @@ internal static class TextWriterExtensions
 		writer.OpenBrace("(", CodeBracesRangeFlags.Parentheses);
 
 		bool firstParameter = true;
-		for (var paramIdx = 0; paramIdx < type.Parameters.Count; paramIdx++)
+		foreach (var parameter in type.Parameters)
 		{
-			var parameter = type.Parameters[paramIdx];
 			if (!firstParameter)
 				writer.Punctuation(", ");
 			firstParameter = false;
 
-			writer.Keyword(parameter.ToWasmType());
+			writer.Type(parameter);
 		}
 
 		writer.CloseBrace(")");
@@ -263,7 +263,7 @@ internal static class TextWriterExtensions
 					writer.Punctuation(", ");
 				firstReturnParameter = false;
 
-				writer.Keyword(returnParameter.ToWasmType());
+				writer.Type(returnParameter);
 			}
 
 			if (type.Returns.Count > 1) writer.CloseBrace(")");
