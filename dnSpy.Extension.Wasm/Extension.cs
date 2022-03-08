@@ -8,6 +8,7 @@ public class Extension : IExtension
 	public ExtensionInfo ExtensionInfo => new()
 	{
 		ShortDescription = "Provides WebAssembly (WASM) support",
+		Copyright = "Copyright (C) HoLLy",
 	};
 
 	public IEnumerable<string> MergedResourceDictionaries
