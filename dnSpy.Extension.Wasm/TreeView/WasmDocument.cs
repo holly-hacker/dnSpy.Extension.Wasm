@@ -231,7 +231,13 @@ internal class WasmDocumentNode : DsDocumentNode, IDecompileSelf
 
 		if (Document.Module.Start != null)
 		{
-			writer.EndLine().Keyword("Start Function").Punctuation(": ").Number(Document.Module.Start.Value);
+			var globalFunctionIndex = (int)Document.Module.Start.Value;
+
+			var functionName = Document.GetFunctionName(globalFunctionIndex);
+			var functionType = Document.GetFunctionType(globalFunctionIndex);
+
+			writer.EndLine().Keyword("start").Punctuation(": ")
+				.FunctionDeclaration(functionName, functionType, globalFunctionIndex);
 		}
 
 		return true;
