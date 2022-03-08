@@ -8,7 +8,7 @@
         <LangVersion>10</LangVersion>
         <UseWPF>true</UseWPF>
         <AssemblyName>dnSpy.Extension.Wasm.x</AssemblyName>
-        <AssemblyVersion>0.0.1.0</AssemblyVersion>
+        <AssemblyVersion>0.1.0.0</AssemblyVersion>
         <Description>WebAssembly support</Description>
         <Copyright>Copyright (C) HoLLy</Copyright>
     </PropertyGroup>
