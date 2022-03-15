@@ -87,7 +87,7 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 
 		var type = _document.Module.Types[(int)_function.TypeIndex];
 		writer.Keyword("import").Space()
-			.FunctionDeclaration(_function.GetFullName(), type);
+			.FunctionDeclaration(_function.GetFullName(), type, FunctionIndex);
 
 		return true;
 	}

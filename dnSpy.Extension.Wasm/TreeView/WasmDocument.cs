@@ -46,7 +46,7 @@ internal class WasmDocument : DsDocument
 	}
 
 	public Module Module { get; }
-	public NameSection? NameSection { get; }
+	public NameSection? NameSection { get; set; }
 
 	public int ImportedFunctionCount => _importedFunctionCount ??= Module.Imports.OfType<Import.Function>().Count();
 	public int ImportedTableCount => _importedTableCount ??= Module.Imports.OfType<Import.Table>().Count();
@@ -63,24 +63,26 @@ internal class WasmDocument : DsDocument
 
 	public string GetFunctionNameFromSectionIndex(int index)
 	{
+		if (NameSection?.FunctionNames?.TryGetValue(index + ImportedFunctionCount, out string foundName) == true)
+			return foundName!;
+
 		var export = Module.Exports.SingleOrDefault(e => e.Kind == ExternalKind.Function && e.Index - ImportedFunctionCount == index);
 
-		return export switch
-		{
-			{ } => export.Name,
-			_ when NameSection?.FunctionNames?.TryGetValue(index + ImportedFunctionCount, out string foundName) == true
-				=> foundName!,
-			_ => $"function_{index}",
-		};
+		if (export is { })
+			return export.Name;
+
+		return $"function_{index}";
 	}
 
 	public string GetFunctionName(int fullIndex)
 	{
-		return TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) switch
-		{
-			{ } import => import.GetFullName(),
-			_ => GetFunctionNameFromSectionIndex(sectionIndex),
-		};
+		if (NameSection?.FunctionNames?.TryGetValue(fullIndex, out string foundName) == true)
+			return foundName!;
+
+		if (TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) is { } import)
+			return import.GetFullName();
+
+		return GetFunctionNameFromSectionIndex(sectionIndex);
 	}
 
 	public WebAssemblyType GetFunctionType(int fullIndex)

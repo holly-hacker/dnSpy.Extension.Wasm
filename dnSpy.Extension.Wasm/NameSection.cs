@@ -12,11 +12,10 @@ namespace dnSpy.Extension.Wasm;
 /// </summary>
 internal class NameSection
 {
-	private NameSection() {}
-
-	public string? ModuleName { get; private set; }
-	public IReadOnlyDictionary<int, string>? FunctionNames { get; private set; }
-	public IReadOnlyDictionary<(int, int), string>? LocalNames { get; private set; }
+	public string? ModuleName { get; set; }
+	/// <summary> Maps function indices in function space (ie. including imports) to names. </summary>
+	public IDictionary<int, string>? FunctionNames { get; set; }
+	public IDictionary<(int, int), string>? LocalNames { get; set; }
 
 	public static NameSection Read(byte[] data)
 	{

@@ -15,7 +15,7 @@ namespace dnSpy.Extension.Wasm.Commands;
 	Icon = DsImagesAttribute.Save,
 	Group = WasmMenuConstants.GroupAppMenuWasm,
 	Order = 0)]
-public class SaveWasmModuleCommand : MenuItemBase
+internal class SaveWasmModuleCommand : MenuItemBase
 {
 	private readonly IDocumentTreeView _documentTreeView;
 
