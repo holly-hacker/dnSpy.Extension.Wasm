@@ -61,6 +61,27 @@ internal class WasmDocument : DsDocument
 
 	public override IDsDocumentNameKey Key => new FilenameKey(Filename);
 
+	public void SaveToStream(Stream stream)
+	{
+		if (NameSection is not null)
+		{
+			var nameSection = Module.CustomSections.FirstOrDefault(s => s.PrecedingSection == Section.Data && s.Name == "name");
+			if (nameSection is null)
+			{
+				nameSection = new CustomSection
+				{
+					Name = "name",
+					PrecedingSection = Section.Data,
+				};
+				Module.CustomSections.Add(nameSection);
+			}
+
+			nameSection.Content = NameSection.ToList();
+		}
+
+		Module.WriteToBinary(stream);
+	}
+
 	public string GetFunctionNameFromSectionIndex(int index)
 	{
 		if (NameSection?.FunctionNames?.TryGetValue(index + ImportedFunctionCount, out string foundName) == true)
@@ -136,7 +157,8 @@ internal class WasmDocument : DsDocument
 
 	public string? TryGetLocalName(int function, int local)
 	{
-		return NameSection?.LocalNames?.TryGetValue((function + ImportedFunctionCount, local), out string found) == true
+		return NameSection?.LocalNames?.TryGetValue(function + ImportedFunctionCount, out var locals) == true
+		       && locals?.TryGetValue(local, out string found) == true
 			? found
 			: null;
 	}

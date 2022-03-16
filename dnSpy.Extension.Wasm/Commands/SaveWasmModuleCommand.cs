@@ -42,8 +42,6 @@ internal class SaveWasmModuleCommand : MenuItemBase
 
 		foreach (var document in documents)
 		{
-			var module = document.Module;
-
 			var sfd = new SaveFileDialog
 			{
 				Title = "Save WASM module",
@@ -55,7 +53,7 @@ internal class SaveWasmModuleCommand : MenuItemBase
 			if (sfd.ShowDialog() == true)
 			{
 				using var openFile = sfd.OpenFile();
-				module.WriteToBinary(openFile);
+				document.SaveToStream(openFile);
 			}
 		}
 	}

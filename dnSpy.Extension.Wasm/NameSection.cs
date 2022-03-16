@@ -15,7 +15,10 @@ internal class NameSection
 	public string? ModuleName { get; set; }
 	/// <summary> Maps function indices in function space (ie. including imports) to names. </summary>
 	public IDictionary<int, string>? FunctionNames { get; set; }
-	public IDictionary<(int, int), string>? LocalNames { get; set; }
+	/// <summary>
+	/// Maps function indices in function space (ie. including imports) to a map of local indices to local names.
+	/// </summary>
+	public IDictionary<int, IDictionary<int, string>>? LocalNames { get; set; }
 
 	public static NameSection Read(byte[] data)
 	{
@@ -73,19 +76,23 @@ internal class NameSection
 			var sectionStartIndex = br.BaseStream.Position;
 
 			var functionCount = br.ReadULEB128();
-			var dic = new Dictionary<(int, int), string>();
+			var functions = new Dictionary<int, IDictionary<int, string>>();
 
 			for (var i = 0; i < functionCount; i++)
 			{
 				var functionIndex = (int)br.ReadULEB128();
 				var localCount = (int)br.ReadULEB128();
 
+				var locals = new Dictionary<int, string>();
+
 				for (var j = 0; j < localCount; j++)
 				{
-					var namedIndex = (int)br.ReadULEB128();
+					var localIndex = (int)br.ReadULEB128();
 					var localName = br.ReadString();
-					dic[(functionIndex, namedIndex)] = localName;
+					locals[localIndex] = localName;
 				}
+
+				functions[functionIndex] = locals;
 			}
 
 			if (sectionStartIndex + sectionLength != br.BaseStream.Position)
@@ -93,10 +100,80 @@ internal class NameSection
 				throw new Exception($"Module section length mismatch: {sectionLength} expected, {br.BaseStream.Position = sectionStartIndex} read");
 			}
 
-			section.LocalNames = dic;
+			section.LocalNames = functions;
 		}
 
 		return section;
+	}
+
+	public IList<byte> ToList()
+	{
+		var bytes = new List<byte>();
+
+		if (ModuleName != null)
+		{
+			bytes.Add((byte)Subsection.ModuleName);
+
+			var ms = new MemoryStream();
+			var bw = new BinaryWriter(ms);
+
+			bw.Write(ModuleName);
+
+			bw.Flush();
+			byte[] sectionBytes = ms.ToArray();
+			bytes.AddRange(((uint)sectionBytes.Length).ToULEB128());
+			bytes.AddRange(sectionBytes);
+		}
+
+		if (FunctionNames != null)
+		{
+			bytes.Add((byte)Subsection.FunctionNames);
+
+			var ms = new MemoryStream();
+			var bw = new BinaryWriter(ms);
+
+			bw.WriteULEB128((uint)FunctionNames.Count);
+
+			foreach (var kvp in FunctionNames)
+			{
+				bw.WriteULEB128((uint)kvp.Key);
+				bw.Write(kvp.Value);
+			}
+
+			bw.Flush();
+			byte[] sectionBytes = ms.ToArray();
+			bytes.AddRange(((uint)sectionBytes.Length).ToULEB128());
+			bytes.AddRange(sectionBytes);
+		}
+
+		if (LocalNames != null)
+		{
+			bytes.Add((byte)Subsection.LocalNames);
+
+			var ms = new MemoryStream();
+			var bw = new BinaryWriter(ms);
+
+			bw.WriteULEB128((uint)LocalNames.Count);
+
+			foreach (var kvp in LocalNames)
+			{
+				bw.WriteULEB128((uint)kvp.Key);
+				bw.WriteULEB128((uint)kvp.Value.Count);
+
+				foreach (var kvp2 in kvp.Value)
+				{
+					bw.WriteULEB128((uint)kvp2.Key);
+					bw.Write(kvp2.Value);
+				}
+			}
+
+			bw.Flush();
+			byte[] sectionBytes = ms.ToArray();
+			bytes.AddRange(((uint)sectionBytes.Length).ToULEB128());
+			bytes.AddRange(sectionBytes);
+		}
+
+		return bytes;
 	}
 
 	private enum Subsection : byte

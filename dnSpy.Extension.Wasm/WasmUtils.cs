@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -54,5 +55,36 @@ public static class WasmUtils
 		}
 
 		return val;
+	}
+
+	public static void WriteULEB128(this BinaryWriter bw, uint val)
+	{
+		do
+		{
+			var toWrite = (byte)(val & 0x7F);
+			val >>= 7;
+
+			if (val > 0)
+				toWrite |= 0x80;
+
+			bw.Write(toWrite);
+		} while (val > 0);
+	}
+
+	public static IList<byte> ToULEB128(this uint val)
+	{
+		var bytes = new List<byte>(5);
+		do
+		{
+			var toWrite = (byte)(val & 0x7F);
+			val >>= 7;
+
+			if (val > 0)
+				toWrite |= 0x80;
+
+			bytes.Add(toWrite);
+		} while (val > 0);
+
+		return bytes;
 	}
 }
