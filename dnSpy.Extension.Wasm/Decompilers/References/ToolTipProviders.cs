@@ -17,9 +17,9 @@ public class LocalGlobalToolTipProvider : IDocumentViewerToolTipProvider
 			case LocalReference local:
 			{
 				var toolTipProvider = context.Create();
-				toolTipProvider.Image = local.IsArgument ? DsImages.Parameter : DsImages.LocalVariable;
+				toolTipProvider.Image = local.IsParameter ? DsImages.Parameter : DsImages.LocalVariable;
 				var writer = new TextColorWriter(toolTipProvider.Output);
-				writer.Keyword(local.IsArgument ? "param" : "local").Space()
+				writer.Keyword(local.IsParameter ? "param" : "local").Space()
 					.Local(local.Name, local, false).Punctuation(": ")
 					.Type(local.Type);
 				return toolTipProvider.Create();

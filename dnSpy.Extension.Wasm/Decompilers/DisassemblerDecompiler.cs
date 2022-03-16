@@ -21,7 +21,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 		WriteLocals(vars, writer);
 
-		if (vars.Locals.Any(l => !l.IsArgument))
+		if (vars.Locals.Any(l => !l.IsParameter))
 			writer.EndLine();
 
 		WriteInstructions(vars, doc, writer, code);
@@ -31,7 +31,7 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 
 	private void WriteLocals(VariableInfo vars, DecompilerWriter writer)
 	{
-		foreach (var local in vars.Locals.Where(l => !l.IsArgument))
+		foreach (var local in vars.Locals.Where(l => !l.IsParameter))
 		{
 			writer.Local(local.Name, local, true).Punctuation(": ").Type(local.Type);
 			writer.EndLine();

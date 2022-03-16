@@ -19,19 +19,21 @@ internal class FunctionReference : IWasmReference
 
 public class LocalReference : IWasmReference
 {
-	public LocalReference(string name, WebAssemblyValueType type, int index, bool isArgument)
+	public LocalReference(string name, WebAssemblyValueType type, int index, bool isParameter, int? globalFunctionIndex)
 	{
 		Name = name;
 		Type = type;
 		Index = index;
-		IsArgument = isArgument;
+		IsParameter = isParameter;
+		GlobalFunctionIndex = globalFunctionIndex;
 	}
 
 	public string Name { get; set; }
 	public WebAssemblyValueType Type { get; set; }
 
 	public int Index { get; }
-	public bool IsArgument { get; }
+	public bool IsParameter { get; }
+	public int? GlobalFunctionIndex { get; }
 }
 
 public class GlobalReference : IWasmReference

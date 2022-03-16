@@ -13,12 +13,17 @@ namespace dnSpy.Extension.Wasm;
 internal class NameSection
 {
 	public string? ModuleName { get; set; }
+
 	/// <summary> Maps function indices in function space (ie. including imports) to names. </summary>
-	public IDictionary<int, string>? FunctionNames { get; set; }
+	public IReadOnlyDictionary<int, string>? FunctionNames => _functionNames;
+
 	/// <summary>
 	/// Maps function indices in function space (ie. including imports) to a map of local indices to local names.
 	/// </summary>
-	public IDictionary<int, IDictionary<int, string>>? LocalNames { get; set; }
+	public IReadOnlyDictionary<int, IReadOnlyDictionary<int, string>>? LocalNames => _localNames;
+
+	private Dictionary<int, string>? _functionNames;
+	private Dictionary<int, IReadOnlyDictionary<int, string>>? _localNames;
 
 	public static NameSection Read(byte[] data)
 	{
@@ -65,7 +70,7 @@ internal class NameSection
 				throw new Exception($"Module section length mismatch: {sectionLength} expected, {br.BaseStream.Position = sectionStartIndex} read");
 			}
 
-			section.FunctionNames = dic;
+			section._functionNames = dic;
 		}
 
 		if (br.PeekChar() == (byte)Subsection.LocalNames)
@@ -76,7 +81,7 @@ internal class NameSection
 			var sectionStartIndex = br.BaseStream.Position;
 
 			var functionCount = br.ReadULEB128();
-			var functions = new Dictionary<int, IDictionary<int, string>>();
+			var functions = new Dictionary<int, IReadOnlyDictionary<int, string>>();
 
 			for (var i = 0; i < functionCount; i++)
 			{
@@ -100,7 +105,7 @@ internal class NameSection
 				throw new Exception($"Module section length mismatch: {sectionLength} expected, {br.BaseStream.Position = sectionStartIndex} read");
 			}
 
-			section.LocalNames = functions;
+			section._localNames = functions;
 		}
 
 		return section;
@@ -174,6 +179,25 @@ internal class NameSection
 		}
 
 		return bytes;
+	}
+
+	public void SetFunctionName(int functionIndex, string name)
+	{
+		_functionNames ??= new Dictionary<int, string>();
+		_functionNames[functionIndex] = name;
+	}
+
+	public void SetLocalName(int functionIndex, int localIndex, string name)
+	{
+		_localNames ??= new Dictionary<int, IReadOnlyDictionary<int, string>>();
+
+		if (!_localNames.TryGetValue(functionIndex, out var locals))
+			locals = _localNames[functionIndex] = new Dictionary<int, string>();
+
+		if (locals is not IDictionary<int, string> dic)
+			throw new Exception($"{nameof(LocalNames)} should contain values of type {nameof(IDictionary<int, string>)}");
+
+		dic[localIndex] = name;
 	}
 
 	private enum Subsection : byte

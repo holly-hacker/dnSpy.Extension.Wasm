@@ -43,7 +43,7 @@ internal class VariableInfo
 
 		name ??= $"arg_{i}";
 
-		_locals.Add(new LocalReference(name, type, i, true));
+		_locals.Add(new LocalReference(name, type, i, true, _globalFunctionIndex));
 		ParamCount++;
 	}
 
@@ -55,7 +55,7 @@ internal class VariableInfo
 
 		name ??= $"var_{i}";
 
-		_locals.Add(new LocalReference(name, type, i, false));
+		_locals.Add(new LocalReference(name, type, i, false, _globalFunctionIndex));
 	}
 
 	public GlobalReference GetGlobal(int index)

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System;
 using System.ComponentModel.Composition;
 using System.Linq;
 using dnSpy.Contracts.App;
@@ -32,7 +32,7 @@ internal class RenameCommand : MenuItemBase
 			return false;
 
 		var reference = context.Find<TextReference>()?.Reference as IWasmReference;
-		return reference is FunctionReference or GlobalReference && GetWasmDocument() is not null;
+		return reference is FunctionReference or LocalReference { GlobalFunctionIndex: { } } && GetWasmDocument() is not null;
 	}
 
 	public override void Execute(IMenuItemContext context)
@@ -56,8 +56,31 @@ internal class RenameCommand : MenuItemBase
 
 				// set name
 				doc.NameSection ??= new NameSection();
-				doc.NameSection.FunctionNames ??= new Dictionary<int, string>();
-				doc.NameSection.FunctionNames[function.GlobalFunctionIndex] = name;
+				doc.NameSection.SetFunctionName(function.GlobalFunctionIndex, name);
+
+				// invalidate document, forces it to reload
+				var docTabService = docViewer.DocumentTab?.DocumentTabService;
+				docTabService?.RefreshModifiedDocument(doc);
+
+				// re-render all tree view nodes so they use the correct name
+				// NOTE: should update just the correct ones individually. this may include import or export nodes
+				_documentTreeView.TreeView.RefreshAllNodes();
+				break;
+			}
+			case LocalReference local:
+			{
+				var functionIndex = local.GlobalFunctionIndex ?? throw new Exception($"{nameof(local.GlobalFunctionIndex)} should be set");
+
+				string originalName = local.Name;
+				string description = local.IsParameter ? "parameter" : "variable";
+
+				var name = MsgBox.Instance.Ask<string?>($"Enter a new {description} name", originalName, $"Rename {description}");
+				if (name == null)
+					return;
+
+				// set name
+				doc.NameSection ??= new NameSection();
+				doc.NameSection.SetLocalName(functionIndex, local.Index, name);
 
 				// invalidate document, forces it to reload
 				var docTabService = docViewer.DocumentTab?.DocumentTabService;

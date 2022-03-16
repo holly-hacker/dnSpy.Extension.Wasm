@@ -157,7 +157,7 @@ internal class WasmDocument : DsDocument
 
 	public string? TryGetLocalName(int function, int local)
 	{
-		return NameSection?.LocalNames?.TryGetValue(function + ImportedFunctionCount, out var locals) == true
+		return NameSection?.LocalNames?.TryGetValue(function, out var locals) == true
 		       && locals?.TryGetValue(local, out string found) == true
 			? found
 			: null;
