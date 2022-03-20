@@ -18,25 +18,49 @@ namespace dnSpy.Extension.Wasm.Commands;
 	Icon = DsImagesAttribute.Save,
 	Group = WasmMenuConstants.GroupAppMenuWasm,
 	Order = 0)]
-internal class SaveWasmModuleCommand : MenuItemBase
+internal class SaveWasmModuleCommandAppMenu : SaveWasmModuleCommand
 {
-	private readonly IDocumentTreeView _documentTreeView;
-
 	[ImportingConstructor]
-	public SaveWasmModuleCommand(IDocumentTreeView documentTreeView)
+	public SaveWasmModuleCommandAppMenu(IDocumentTreeView documentTreeView) : base(documentTreeView) { }
+}
+
+[ExportMenuItem(
+	Header = "Save WASM module",
+	Icon = DsImagesAttribute.Save,
+	Group = WasmMenuConstants.GroupTreeViewWasm,
+	Order = 0)]
+internal class SaveWasmModuleCommandTreeView : SaveWasmModuleCommand
+{
+	[ImportingConstructor]
+	public SaveWasmModuleCommandTreeView(IDocumentTreeView documentTreeView) : base(documentTreeView) { }
+
+	protected override bool IsCorrectContext(IMenuItemContext context)
 	{
-		_documentTreeView = documentTreeView;
+		return context.CreatorObject.Guid == new Guid(MenuConstants.GUIDOBJ_DOCUMENTS_TREEVIEW_GUID)
+		       && DocumentTreeView?.TreeView?.SelectedItem is WasmDocumentNode;
 	}
+}
+
+internal abstract class SaveWasmModuleCommand : MenuItemBase
+{
+	protected readonly IDocumentTreeView DocumentTreeView;
+
+	protected SaveWasmModuleCommand(IDocumentTreeView documentTreeView)
+	{
+		DocumentTreeView = documentTreeView;
+	}
+
+	protected virtual bool IsCorrectContext(IMenuItemContext context) => true;
 
 	public override bool IsVisible(IMenuItemContext context)
 	{
-		return _documentTreeView.TreeView.TopLevelSelection
+		return IsCorrectContext(context) && DocumentTreeView.TreeView.TopLevelSelection
 			.Any(n => n.GetAncestorOrSelf<WasmDocumentNode>()?.Document is not null);
 	}
 
 	public override void Execute(IMenuItemContext context)
 	{
-		var selectedDocuments = _documentTreeView.TreeView.TopLevelSelection
+		var selectedDocuments = DocumentTreeView.TreeView.TopLevelSelection
 			.Select(n => n.GetAncestorOrSelf<WasmDocumentNode>()?.Document)
 			.Where(n => n is not null)
 			.Distinct()
@@ -61,14 +85,14 @@ internal class SaveWasmModuleCommand : MenuItemBase
 				// if saved to a new file, open and select it
 				if (document.Filename != sfd.FileName)
 				{
-					var openedDocument = _documentTreeView.DocumentService.TryGetOrCreate(DsDocumentInfo.CreateDocument(sfd.FileName));
+					var openedDocument = DocumentTreeView.DocumentService.TryGetOrCreate(DsDocumentInfo.CreateDocument(sfd.FileName));
 					if (openedDocument == null)
 						continue;
 
 					Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => {
-						var node = _documentTreeView.FindNode(openedDocument);
+						var node = DocumentTreeView.FindNode(openedDocument);
 						if (node is not null)
-							_documentTreeView.TreeView.SelectItems(new[] { node });
+							DocumentTreeView.TreeView.SelectItems(new[] { node });
 					}));
 				}
 			}
