@@ -1,6 +1,9 @@
+using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using System.Windows.Threading;
+using dnSpy.Contracts.Documents;
 using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Menus;
@@ -33,14 +36,14 @@ internal class SaveWasmModuleCommand : MenuItemBase
 
 	public override void Execute(IMenuItemContext context)
 	{
-		var documents = _documentTreeView.TreeView.TopLevelSelection
+		var selectedDocuments = _documentTreeView.TreeView.TopLevelSelection
 			.Select(n => n.GetAncestorOrSelf<WasmDocumentNode>()?.Document)
 			.Where(n => n is not null)
 			.Distinct()
 			.Select(n => n!) // ugh
 			.ToArray();
 
-		foreach (var document in documents)
+		foreach (var document in selectedDocuments)
 		{
 			var sfd = new SaveFileDialog
 			{
@@ -52,8 +55,22 @@ internal class SaveWasmModuleCommand : MenuItemBase
 
 			if (sfd.ShowDialog() == true)
 			{
-				using var openFile = sfd.OpenFile();
-				document.SaveToStream(openFile);
+				using (var openFile = sfd.OpenFile())
+					document.SaveToStream(openFile);
+
+				// if saved to a new file, open and select it
+				if (document.Filename != sfd.FileName)
+				{
+					var openedDocument = _documentTreeView.DocumentService.TryGetOrCreate(DsDocumentInfo.CreateDocument(sfd.FileName));
+					if (openedDocument == null)
+						continue;
+
+					Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => {
+						var node = _documentTreeView.FindNode(openedDocument);
+						if (node is not null)
+							_documentTreeView.TreeView.SelectItems(new[] { node });
+					}));
+				}
 			}
 		}
 	}
