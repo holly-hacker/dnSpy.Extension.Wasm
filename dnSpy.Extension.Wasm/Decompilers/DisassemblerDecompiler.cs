@@ -55,12 +55,19 @@ internal class DisassemblerDecompiler : IWasmDecompiler
 					if (block.Type != BlockType.Empty)
 						writer.Keyword(block.Type.ToTypeString()).Space();
 
-					var flags = CodeBracesRangeFlags.BraceKind_CurlyBraces;
-					flags |= CodeBracesRangeFlags.BlockKind_Other;
+					var flags = CodeBracesRangeFlags.BraceKind_CurlyBraces | CodeBracesRangeFlags.BlockKind_Other;
 
 					var label = new BlockReference(labelStack.Count);
 					writer.Label($"'{label}", label, true).Space().OpenBrace("{", flags).Indent();
 					labelStack.Push(label);
+					break;
+				}
+				case Else @else:
+				{
+					var flags = CodeBracesRangeFlags.BraceKind_CurlyBraces | CodeBracesRangeFlags.BlockKind_Other;
+					writer.DeIndent()
+						.CloseBrace("}").Space().OpCode(@else.OpCode).Space().OpenBrace("{", flags)
+						.Indent();
 					break;
 				}
 				case End:
