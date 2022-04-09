@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <LangVersion>10</LangVersion>
+        <TargetFrameworks>net48;net5.0</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <RootNamespace>HoLLy.Decompiler.Core</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="BackEnd" />
+    </ItemGroup>
+
+</Project>
