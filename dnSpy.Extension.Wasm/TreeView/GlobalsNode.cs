@@ -7,20 +7,16 @@ using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
-using dnSpy.Extension.Wasm.Decompilers;
 using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
 
-internal class GlobalsNode : DocumentTreeNodeData, IDecompileSelf
+internal class GlobalsNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("9bfd4f05-9a4c-4bf0-9ff6-542366876bfa");
 
-	private readonly WasmDocument _document;
-
-	public GlobalsNode(WasmDocument document)
+	public GlobalsNode(WasmDocument document) : base(document)
 	{
-		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -41,20 +37,18 @@ internal class GlobalsNode : DocumentTreeNodeData, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		return _document.Module.Globals.Select((global, i) => new GlobalNode(_document, global, i));
+		return Document.Module.Globals.Select((global, i) => new GlobalNode(Document, global, i));
 	}
 }
 
-internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
+internal class GlobalNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("e563d665-0da8-45cc-ab82-5cb2e5a4fcb4");
 
-	private readonly WasmDocument _document;
 	private readonly Global _global;
 
-	public GlobalNode(WasmDocument document, Global global, int index)
+	public GlobalNode(WasmDocument document, Global global, int index) : base(document)
 	{
-		_document = document;
 		_global = global;
 		Index = index;
 	}
@@ -69,7 +63,7 @@ internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		string name = _document.GetGlobalNameFromSectionIndex(Index);
+		string name = Document.GetGlobalNameFromSectionIndex(Index);
 		var writer = new TextColorWriter(output);
 
 		writer.Keyword("global").Space().Text(name).Punctuation(": ");
@@ -80,7 +74,7 @@ internal class GlobalNode : DocumentTreeNodeData, IDecompileSelf
 
 	public bool Decompile(IDecompileNodeContext context)
 	{
-		string name = _document.GetGlobalNameFromSectionIndex(Index);
+		string name = Document.GetGlobalNameFromSectionIndex(Index);
 		var writer = new DecompilerWriter(context.Output);
 
 		// same as above

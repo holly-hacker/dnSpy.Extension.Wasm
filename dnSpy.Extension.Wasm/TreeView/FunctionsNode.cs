@@ -10,15 +10,12 @@ using dnSpy.Extension.Wasm.Decompilers;
 
 namespace dnSpy.Extension.Wasm.TreeView;
 
-internal class FunctionsNode : DocumentTreeNodeData, IDecompileSelf
+internal class FunctionsNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("f98e7381-444e-43aa-882d-84dcde4c56c9");
 
-	private readonly WasmDocument _document;
-
-	public FunctionsNode(WasmDocument document)
+	public FunctionsNode(WasmDocument document) : base(document)
 	{
-		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -48,25 +45,23 @@ internal class FunctionsNode : DocumentTreeNodeData, IDecompileSelf
 		// if (this.GetDocumentNode()?.Document is not WasmDocument wasmDocument)
 		// 	yield break;
 
-		var module = _document.Module;
+		var module = Document.Module;
 
 		for (var i = 0; i < module.Functions.Count; i++)
 		{
-			yield return new FunctionNode(_document, i);
+			yield return new FunctionNode(Document, i);
 		}
 	}
 }
 
-internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
+internal class FunctionNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("b2cdecbc-7f8b-464e-b3d2-fa2be4c3f68c");
 
-	private readonly WasmDocument _document;
 	public readonly int Index;
 
-	public FunctionNode(WasmDocument document, int index)
+	public FunctionNode(WasmDocument document, int index) : base(document)
 	{
-		_document = document;
 		Index = index;
 	}
 
@@ -80,9 +75,9 @@ internal class FunctionNode : DocumentTreeNodeData, IDecompileSelf
 
 	protected override void WriteCore(ITextColorWriter output, IDecompiler decompiler, DocumentNodeWriteOptions options)
 	{
-		var name = _document.GetFunctionNameFromSectionIndex(Index);
-		var function = _document.Module.Functions[Index];
-		var type = _document.Module.Types[(int)function.Type];
+		var name = Document.GetFunctionNameFromSectionIndex(Index);
+		var function = Document.Module.Functions[Index];
+		var type = Document.Module.Types[(int)function.Type];
 		new TextColorWriter(output).FunctionDeclaration(name, type);
 	}
 

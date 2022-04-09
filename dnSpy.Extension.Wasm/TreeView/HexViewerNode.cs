@@ -1,10 +1,13 @@
 using dnSpy.Contracts.Documents.Tabs.DocViewer;
-using dnSpy.Contracts.Documents.TreeView;
 
 namespace dnSpy.Extension.Wasm.TreeView;
 
-public abstract class HexViewerNode : DocumentTreeNodeData, IDecompileSelf
+internal abstract class HexViewerNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
+	protected HexViewerNode(WasmDocument document) : base(document)
+	{
+	}
+
 	public bool Decompile(IDecompileNodeContext context) => false;
 
 	public abstract string GetName();

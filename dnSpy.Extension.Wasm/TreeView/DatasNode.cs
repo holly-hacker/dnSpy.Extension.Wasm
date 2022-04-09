@@ -12,15 +12,12 @@ using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
 
-internal class DatasNode : DocumentTreeNodeData, IDecompileSelf
+internal class DatasNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("af4d9d2f-7be2-4b6e-bdcf-a6212759567d");
 
-	private readonly WasmDocument _document;
-
-	public DatasNode(WasmDocument document)
+	public DatasNode(WasmDocument document) : base(document)
 	{
-		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -41,7 +38,7 @@ internal class DatasNode : DocumentTreeNodeData, IDecompileSelf
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		return _document.Module.Data.Select((data, i) => new DataNode(_document, data, i));
+		return Document.Module.Data.Select((data, i) => new DataNode(Document, data, i));
 	}
 }
 
@@ -49,13 +46,11 @@ internal class DataNode : HexViewerNode
 {
 	public static readonly Guid MyGuid = new("893542d1-d1bc-4a03-bcaa-70d288e28189");
 
-	private readonly WasmDocument _wasmDocument;
 	private readonly Data _data;
 	private readonly int _index;
 
-	public DataNode(WasmDocument wasmDocument, Data data, int index)
+	public DataNode(WasmDocument document, Data data, int index) : base(document)
 	{
-		_wasmDocument = wasmDocument;
 		_data = data;
 		_index = index;
 	}
@@ -77,20 +72,18 @@ internal class DataNode : HexViewerNode
 
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
-		yield return new DataInitializerNode(_wasmDocument, _data);
+		yield return new DataInitializerNode(Document, _data);
 	}
 }
 
-internal class DataInitializerNode : DocumentTreeNodeData, IDecompileSelf
+internal class DataInitializerNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("dbf2fa46-d3a7-4ae4-90ff-96a20be6bff1");
 
-	private readonly WasmDocument _document;
 	private readonly Data _data;
 
-	public DataInitializerNode(WasmDocument document, Data data)
+	public DataInitializerNode(WasmDocument document, Data data) : base(document)
 	{
-		_document = document;
 		_data = data;
 	}
 
