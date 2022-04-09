@@ -83,8 +83,8 @@ internal class GlobalNode : WasmDocumentTreeNodeData, IDecompileSelf
 			writer.Keyword("mut").Space();
 		writer.Type(_global.ContentType).EndLine().EndLine();
 
-		var disassembler = new DisassemblerDecompiler();
-		disassembler.Decompile(_document, writer, "initialize", new List<Local>(), _global.InitializerExpression, new WebAssemblyType
+		var decompiler = Document.DecompilerService.CurrentDecompiler;
+		decompiler.Decompile(Document, writer, "initialize", new List<Local>(), _global.InitializerExpression, new WebAssemblyType
 		{
 			Form = FunctionType.Function,
 			Parameters = new List<WebAssemblyValueType>(),

@@ -90,8 +90,8 @@ internal class FunctionExportNode : WasmDocumentTreeNodeData, IDecompileSelf
 			return false;
 
 		var writer = new DecompilerWriter(context.Output);
-		var decompiler = new DisassemblerDecompiler();
-		decompiler.DecompileByFunctionIndex(_document, writer, (int)_export.Index - _document.ImportedFunctionCount);
+		var decompiler = Document.DecompilerService.CurrentDecompiler;
+		decompiler.DecompileByFunctionIndex(Document, writer, (int)_export.Index - Document.ImportedFunctionCount);
 		return true;
 	}
 }
@@ -211,8 +211,8 @@ internal class GlobalExportNode : WasmDocumentTreeNodeData, IDecompileSelf
 			writer.Keyword("mut").Space();
 		writer.Type(Global.ContentType).EndLine().EndLine();
 
-		var disassembler = new DisassemblerDecompiler();
-		disassembler.Decompile(_document, writer, "initialize", new List<Local>(), Global.InitializerExpression, new WebAssemblyType
+		var decompiler = Document.DecompilerService.CurrentDecompiler;
+		decompiler.Decompile(Document, writer, "initialize", new List<Local>(), Global.InitializerExpression, new WebAssemblyType
 		{
 			Form = FunctionType.Function,
 			Parameters = new List<WebAssemblyValueType>(),

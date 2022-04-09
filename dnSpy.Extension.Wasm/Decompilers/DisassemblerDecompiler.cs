@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Linq;
 using dnSpy.Contracts.Decompiler;
 using dnSpy.Extension.Wasm.TreeView;
@@ -8,8 +9,12 @@ using WebAssembly.Instructions;
 
 namespace dnSpy.Extension.Wasm.Decompilers;
 
+[Export(typeof(IWasmDecompiler))]
 internal class DisassemblerDecompiler : IWasmDecompiler
 {
+	public string Name => "Disassembly";
+	public int Order => 0;
+
 	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType, int? globalIndex = null)
 	{
 		var vars = new VariableInfo(doc, locals, functionType, globalIndex);

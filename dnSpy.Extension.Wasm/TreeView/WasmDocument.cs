@@ -11,6 +11,7 @@ using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
+using dnSpy.Extension.Wasm.Decompilers;
 using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
@@ -24,9 +25,10 @@ internal class WasmDocument : DsDocument
 	private int? _importedMemoryCount;
 	private int? _importedGlobalCount;
 
-	public WasmDocument(string path)
+	internal WasmDocument(string path, IWasmDecompilerService decompilerService)
 	{
 		Filename = path;
+		DecompilerService = decompilerService;
 
 		// parse
 		Module = Module.ReadFromBinary(path);
@@ -44,6 +46,8 @@ internal class WasmDocument : DsDocument
 			Debug.WriteLine("Failed to parse Name section: " + e);
 		}
 	}
+
+	public IWasmDecompilerService DecompilerService { get; }
 
 	public Module Module { get; }
 	public NameSection? NameSection { get; set; }
@@ -182,10 +186,18 @@ internal class WasmDocument : DsDocument
 [Export(typeof(IDsDocumentProvider))]
 internal class WasmDocumentProvider : IDsDocumentProvider
 {
+	private readonly IWasmDecompilerService _documentService;
+
+	[ImportingConstructor]
+	public WasmDocumentProvider(IWasmDecompilerService documentService)
+	{
+		_documentService = documentService;
+	}
+
 	public double Order => 0;
 
 	public IDsDocument? Create(IDsDocumentService documentService, DsDocumentInfo documentInfo)
-		=> CanCreateFor(documentService, documentInfo) ? new WasmDocument(documentInfo.Name) : null;
+		=> CanCreateFor(documentService, documentInfo) ? new WasmDocument(documentInfo.Name, _documentService) : null;
 
 	public IDsDocumentNameKey? CreateKey(IDsDocumentService documentService, DsDocumentInfo documentInfo)
 		=> CanCreateFor(documentService, documentInfo) ? new FilenameKey(documentInfo.Name) : null;

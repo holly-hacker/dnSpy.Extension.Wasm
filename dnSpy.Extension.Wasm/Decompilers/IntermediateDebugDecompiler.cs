@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using dnSpy.Extension.Wasm.Decompiling;
 using dnSpy.Extension.Wasm.TreeView;
 using HoLLy.Decompiler.Core.FrontEnd.IntermediateInstructions;
@@ -7,11 +8,17 @@ using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.Decompilers;
 
+[Export(typeof(IWasmDecompiler))]
 internal class IntermediateDebugDecompiler : IWasmDecompiler
 {
+	public string Name => "DEBUG: IR";
+	public int Order => 1;
+
 	public void Decompile(WasmDocument doc, DecompilerWriter writer, string name, IList<Local> locals, IList<Instruction> code,
 		WebAssemblyType functionType, int? globalIndex = null)
 	{
+		// TODO: write function declaration
+
 		try
 		{
 			var converter = new WasmToIlConverter(doc, locals, code, functionType);

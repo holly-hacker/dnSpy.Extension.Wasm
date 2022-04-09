@@ -7,7 +7,6 @@ using dnSpy.Contracts.Documents.TreeView;
 using dnSpy.Contracts.Images;
 using dnSpy.Contracts.Text;
 using dnSpy.Contracts.TreeView;
-using dnSpy.Extension.Wasm.Decompilers;
 using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
@@ -101,8 +100,8 @@ internal class DataInitializerNode : WasmDocumentTreeNodeData, IDecompileSelf
 	{
 		var writer = new DecompilerWriter(context.Output);
 
-		var disassembler = new DisassemblerDecompiler();
-		disassembler.Decompile(_document, writer, "get_offset", new List<Local>(), _data.InitializerExpression, new WebAssemblyType
+		var decompiler = Document.DecompilerService.CurrentDecompiler;
+		decompiler.Decompile(Document, writer, "get_offset", new List<Local>(), _data.InitializerExpression, new WebAssemblyType
 		{
 			Form = FunctionType.Function,
 			Parameters = new List<WebAssemblyValueType>(),

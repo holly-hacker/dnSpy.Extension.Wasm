@@ -84,8 +84,8 @@ internal class FunctionNode : WasmDocumentTreeNodeData, IDecompileSelf
 	public bool Decompile(IDecompileNodeContext context)
 	{
 		var writer = new DecompilerWriter(context.Output);
-		var dec = new DisassemblerDecompiler();
-		dec.DecompileByFunctionIndex(_document, writer, Index);
+		var dec = Document.DecompilerService.CurrentDecompiler;
+		dec.DecompileByFunctionIndex(Document, writer, Index);
 
 		return true;
 	}
