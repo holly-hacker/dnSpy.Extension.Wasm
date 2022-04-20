@@ -11,4 +11,10 @@
       <Folder Include="BackEnd" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\dnSpy\dnSpy\dnSpy.Contracts.Logic\dnSpy.Contracts.Logic.csproj" />
+      <ProjectReference Include="..\Echo\src\Core\Echo.ControlFlow\Echo.ControlFlow.csproj" />
+      <ProjectReference Include="..\Echo\src\Core\Echo.Core\Echo.Core.csproj" />
+    </ItemGroup>
+
 </Project>

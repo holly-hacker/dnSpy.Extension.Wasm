@@ -10,14 +10,14 @@ using WebAssembly.Instructions;
 
 namespace dnSpy.Extension.Wasm.Decompiling;
 
-internal class WasmToIlConverter
+internal class WasmDecompilerFrontend : IDecompilerFrontend
 {
 	private readonly WasmDocument _document;
 	private readonly IList<Local> _locals;
 	private readonly IList<Instruction> _code;
 	private readonly WebAssemblyType _functionType;
 
-	public WasmToIlConverter(WasmDocument document, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType)
+	public WasmDecompilerFrontend(WasmDocument document, IList<Local> locals, IList<Instruction> code, WebAssemblyType functionType)
 	{
 		_document = document;
 		_locals = locals;
@@ -27,12 +27,9 @@ internal class WasmToIlConverter
 
 	public IList<IntermediateInstruction> Convert()
 	{
-		var instructions = new List<IntermediateInstruction>();
-		var variables = new List<WasmLocalVariable>();
-
-		foreach (var parameterType in _functionType.Parameters)
+		static DataType WasmTypeToDecompilerType(WebAssemblyValueType wasmType)
 		{
-			var type = parameterType switch
+			return wasmType switch
 			{
 				WebAssemblyValueType.Int32 => DataType.I32,
 				WebAssemblyValueType.Int64 => DataType.I64,
@@ -40,6 +37,14 @@ internal class WasmToIlConverter
 				WebAssemblyValueType.Float64 => DataType.F64,
 				_ => throw new ArgumentOutOfRangeException(),
 			};
+		}
+
+		var instructions = new List<IntermediateInstruction>();
+		var variables = new List<WasmLocalVariable>();
+
+		foreach (var parameterType in _functionType.Parameters)
+		{
+			var type = WasmTypeToDecompilerType(parameterType);
 			variables.Add(new WasmLocalVariable(type));
 		}
 
@@ -126,6 +131,7 @@ internal class WasmToIlConverter
 				// TODO: Else
 				case End:
 				{
+					// TODO: can throw if a label is queued but not added yet (eg fn {nop; end;})
 					var label = labels.Pop();
 
 					if (label.Type == LabelType.Else)
@@ -201,6 +207,16 @@ internal class WasmToIlConverter
 					var jump = new Jump(false);
 					AddInstruction(jump);
 					label.JumpsToEnd.Enqueue(jump);
+					break;
+				}
+
+				case Call call:
+				{
+					// call.Index
+					var type = _document.GetFunctionType((int)call.Index);
+					AddInstruction(new CallFunction(
+						type.Parameters.Select(WasmTypeToDecompilerType).ToArray(),
+						type.Returns.Select(WasmTypeToDecompilerType).ToArray()));
 					break;
 				}
 

@@ -11,6 +11,9 @@
         <AssemblyVersion>0.1.0.0</AssemblyVersion>
         <Description>WebAssembly support</Description>
         <Copyright>Copyright (C) HoLLy</Copyright>
+
+        <!-- Ensure all dependencies are copied (required for nuget packages) -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
