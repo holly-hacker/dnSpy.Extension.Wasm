@@ -64,19 +64,21 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 			}
 		}
 
-		// wasm labels that branching instructions may jump to
-		var labels = new Stack<LabelInfo>();
+		// the stack of wasm labels that branching instructions may jump to
+		// these represent scopes, and will be popped when the scope exits
+		var labelStack = new Stack<LabelInfo>();
 
 		// queued labels that need to be pushed to the stack
-		var labelsToAdd = new Queue<LabelType>();
+		// the next instruction will have a label of this type
+		var labelTypesToAdd = new Queue<LabelType>();
 
 		// jumps that want their target to be the next instruction
 		var jumpsToAdd = new Queue<Jump>();
 
 		void AddInstruction(IntermediateInstruction i)
 		{
-			while (labelsToAdd.Any())
-				labels.Push(new LabelInfo(i, labelsToAdd.Dequeue()));
+			while (labelTypesToAdd.Any())
+				labelStack.Push(new LabelInfo(i, labelTypesToAdd.Dequeue()));
 
 			while (jumpsToAdd.Any())
 				jumpsToAdd.Dequeue().SetTarget(i);
@@ -84,11 +86,11 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 			instructions.Add(i);
 		}
 
-		LabelInfo GetLabel(uint i) => labels.ElementAt((int)i);
+		LabelInfo GetLabel(uint i) => labelStack.ElementAt((int)i);
 
 		// before doing anything, create a label for the function scope
 		// this is used so return instructions have something to jump to
-		labelsToAdd.Enqueue(LabelType.Block);
+		labelTypesToAdd.Enqueue(LabelType.Block);
 
 		for (var instructionIndex = 0; instructionIndex < _code.Count; instructionIndex++)
 		{
@@ -106,7 +108,7 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 					if (block.Type != BlockType.Empty)
 						throw new NotImplementedException("BlockType is not empty for Block");
 
-					labelsToAdd.Enqueue(LabelType.Block);
+					labelTypesToAdd.Enqueue(LabelType.Block);
 					break;
 				}
 				case Loop loop:
@@ -114,7 +116,7 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 					if (loop.Type != BlockType.Empty)
 						throw new NotImplementedException("BlockType is not empty for Loop");
 
-					labelsToAdd.Enqueue(LabelType.Loop);
+					labelTypesToAdd.Enqueue(LabelType.Loop);
 					break;
 				}
 				case If @if:
@@ -122,33 +124,43 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 					if (@if.Type != BlockType.Empty)
 						throw new NotImplementedException("BlockType is not empty for If");
 
-					labelsToAdd.Enqueue(LabelType.If);
+					labelTypesToAdd.Enqueue(LabelType.If);
 					var jump = new Jump(true);
 					AddInstruction(jump);
-					labels.Peek().JumpsToEnd.Enqueue(jump);
+					labelStack.Peek().JumpsToEnd.Enqueue(jump);
 					break;
 				}
 				// TODO: Else
 				case End:
 				{
-					// TODO: can throw if a label is queued but not added yet (eg fn {nop; end;})
-					var label = labels.Pop();
+					// end the current scope by popping the label from the stack and queueing the relevant jumps
+					// An edge case is an empty function: the label will not be popped yet because no instructions have
+					// been emitted. In that case, dont pop anything.
+					if (!labelStack.Any())
+					{
+						Debug.Assert(!labelStack.Any());
+						Debug.Assert(labelTypesToAdd.Peek() == LabelType.Block);
+						Debug.Assert(labelTypesToAdd.Count == 1);
+						Debug.Assert(instructionIndex == _code.Count - 1);
 
-					if (label.Type == LabelType.Else)
-						throw new NotImplementedException("End for Else block");
+						_ = labelTypesToAdd.Dequeue();
 
-					foreach (var jump in label.JumpsToEnd)
-						jumpsToAdd.Enqueue(jump);
+					}
+					else
+					{
+						var label = labelStack.Pop();
+						Debug.Assert(label.Type == LabelType.Block);
+
+						if (label.Type == LabelType.Else)
+							throw new NotImplementedException("End for Else block");
+
+						foreach (var jump in label.JumpsToEnd)
+							jumpsToAdd.Enqueue(jump);
+					}
 
 					// add pseudo instruction to mark end of function
 					if (instructionIndex == _code.Count - 1)
-					{
-						// end of function, expecting just 1 remaining block label
-						Debug.Assert(!labels.Any());
-						Debug.Assert(label.Type == LabelType.Block);
-
 						AddInstruction(new EndOfFunction());
-					}
 					break;
 				}
 				case Branch branch:
@@ -200,7 +212,7 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 
 				case Return:
 				{
-					var label = GetLabel((uint)(labels.Count - 1)); // get the very last label
+					var label = GetLabel((uint)(labelStack.Count - 1)); // get the very last label
 
 					Debug.Assert(label.Type == LabelType.Block, "label for return instruction should be block");
 
@@ -518,9 +530,9 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 			}
 		}
 
-		Debug.Assert(!labels.Any(), "Label stack should be empty");
+		Debug.Assert(!labelStack.Any(), "Label stack should be empty");
 		Debug.Assert(!jumpsToAdd.Any(), "No queued jumps should be left");
-		Debug.Assert(!labelsToAdd.Any(), "No queued labels should be left");
+		Debug.Assert(!labelTypesToAdd.Any(), "No queued labels should be left");
 
 		Debug.Assert(!instructions.OfType<Jump>().Any(j => j.Target is null), "No jumps with null targets should be left");
 
