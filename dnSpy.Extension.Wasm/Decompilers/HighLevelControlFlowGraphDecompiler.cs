@@ -35,6 +35,6 @@ internal class HighLevelControlFlowGraphDecompiler : IWasmDecompiler
 	private class StandardNodeAdorner : IDotNodeAdorner
 	{
 		public IDictionary<string, string> GetNodeAttributes(INode node, long id) => new Dictionary<string, string>
-			{ ["label"] = node.ToString(), };
+			{ ["label"] = node.ToString()!, };
 	}
 }

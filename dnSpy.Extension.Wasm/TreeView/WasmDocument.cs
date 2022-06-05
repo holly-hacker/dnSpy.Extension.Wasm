@@ -88,7 +88,7 @@ internal class WasmDocument : DsDocument
 
 	public string GetFunctionNameFromSectionIndex(int index)
 	{
-		if (NameSection?.FunctionNames?.TryGetValue(index + ImportedFunctionCount, out string foundName) == true)
+		if (NameSection?.FunctionNames?.TryGetValue(index + ImportedFunctionCount, out string? foundName) == true)
 			return foundName!;
 
 		var export = Module.Exports.SingleOrDefault(e => e.Kind == ExternalKind.Function && e.Index - ImportedFunctionCount == index);
@@ -101,7 +101,7 @@ internal class WasmDocument : DsDocument
 
 	public string GetFunctionName(int fullIndex)
 	{
-		if (NameSection?.FunctionNames?.TryGetValue(fullIndex, out string foundName) == true)
+		if (NameSection?.FunctionNames?.TryGetValue(fullIndex, out string? foundName) == true)
 			return foundName!;
 
 		if (TryGetImport<Import.Function>(fullIndex, ImportedFunctionCount, out int sectionIndex) is { } import)
@@ -162,7 +162,7 @@ internal class WasmDocument : DsDocument
 	public string? TryGetLocalName(int function, int local)
 	{
 		return NameSection?.LocalNames?.TryGetValue(function, out var locals) == true
-		       && locals?.TryGetValue(local, out string found) == true
+		       && locals?.TryGetValue(local, out string? found) == true
 			? found
 			: null;
 	}

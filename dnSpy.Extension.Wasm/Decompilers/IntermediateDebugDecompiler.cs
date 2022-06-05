@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using dnSpy.Contracts.Decompiler;
 using dnSpy.Extension.Wasm.Decompiling;
 using dnSpy.Extension.Wasm.TreeView;
@@ -29,13 +30,13 @@ internal class IntermediateDebugDecompiler : IWasmDecompiler
 			switch (instruction)
 			{
 				case LoadConstant loadConstant:
-					writer.Text("load_const").Space().Keyword(loadConstant.Value.ToString()).EndLine();
+					writer.Text("load_const").Space().Keyword(loadConstant.Value.ToString()!).EndLine();
 					break;
 				case LoadVariable loadVariable:
-					writer.Text("load_var").Space().Keyword(loadVariable.Variable.ToString()).EndLine();
+					writer.Text("load_var").Space().Keyword(loadVariable.Variable.ToString()!).EndLine();
 					break;
 				case StoreVariable storeVariable:
-					writer.Text("store_var").Space().Keyword(storeVariable.Variable.ToString()).EndLine();
+					writer.Text("store_var").Space().Keyword(storeVariable.Variable.ToString()!).EndLine();
 					break;
 
 				case UnaryOperator unaryOperator:
@@ -49,6 +50,7 @@ internal class IntermediateDebugDecompiler : IWasmDecompiler
 					break;
 
 				case Jump jump:
+					Debug2.Assert(jump.Target is not null);
 					int target = instructions.IndexOf(jump.Target);
 					writer.Text(jump.Conditional ? "jmp_if" : "jmp").Space().Number(target, "0000").EndLine();
 					break;
