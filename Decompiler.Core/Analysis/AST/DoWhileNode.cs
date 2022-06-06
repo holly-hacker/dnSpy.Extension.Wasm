@@ -11,5 +11,5 @@ public class DoWhileNode : IHighLevelControlFlowNode
 		LoopCondition = loopCondition;
 	}
 
-	public override string ToString() => $"{Head} do {{{Head}}} while ({LoopCondition});";
+	public override string ToString() => $"do {{{Head}}} while ({LoopCondition});";
 }

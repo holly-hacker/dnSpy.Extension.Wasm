@@ -71,7 +71,6 @@ internal class HighLevelControlFlowDecompiler : IWasmDecompiler
 			}
 			case DoWhileNode doWhile:
 			{
-				Write(writer, doWhile.Head);
 				writer.Keyword("do").Space().OpenBrace("{", CodeBracesRangeFlags.ConditionalBraces).EndLine().Indent();
 				Write(writer, doWhile.Head);
 				writer.DeIndent().CloseBrace("}").Space()

@@ -60,6 +60,9 @@ internal class IfThenNodeMatcher : IRegionMatcher
 		if (trueOutDegree > 1 && falseOutDegree > 1)
 			return null;
 
+		if (onTrueNode.InDegree != 1 && onFalseNode.InDegree != 1)
+			return null;
+
 		var onTrueNext = onTrueNode.GetSuccessors().Cast<AstGraphNode>().FirstOrDefault();
 		var onFalseNext = onFalseNode.GetSuccessors().Cast<AstGraphNode>().FirstOrDefault();
 
@@ -75,7 +78,7 @@ internal class IfThenNodeMatcher : IRegionMatcher
 			return (newNode, new[] { node, onTrueNode, onFalseNode }, null);
 		}
 
-		if (onTrueNext != null && onTrueNext == onFalseNext && onTrueNext.InDegree == 2 &&
+		if (onTrueNext != null && onTrueNext == onFalseNext && onTrueNext.InDegree >= 2 &&
 		    trueOutDegree == 1 && falseOutDegree == 1)
 		{
 			// the successor of the if-true-then and if-false-then blocks are the same
