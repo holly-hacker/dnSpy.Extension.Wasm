@@ -30,13 +30,40 @@ internal class IntermediateDebugDecompiler : IWasmDecompiler
 			switch (instruction)
 			{
 				case LoadConstant loadConstant:
-					writer.Text("load_const").Space().Keyword(loadConstant.Value.ToString()!).EndLine();
+					writer.Text("load_const").Space();
+					_ = loadConstant.Value switch
+					{
+						F32Value f32Value => writer.Number(f32Value.Value),
+						F64Value f64Value => writer.Number(f64Value.Value),
+						I32Value i32Value => writer.Number(i32Value.Value),
+						I64Value i64Value => writer.Number(i64Value.Value),
+						_ => writer.Keyword(loadConstant.Value.ToString()!),
+					};
+					writer.EndLine();
 					break;
-				case LoadVariable loadVariable:
+				case LoadLocal loadVariable:
 					writer.Text("load_var").Space().Keyword(loadVariable.Variable.ToString()!).EndLine();
 					break;
-				case StoreVariable storeVariable:
+				case StoreLocal storeVariable:
 					writer.Text("store_var").Space().Keyword(storeVariable.Variable.ToString()!).EndLine();
+					break;
+				case LoadGlobal loadVariable:
+					writer.Text("load_global").Space().Keyword(loadVariable.Variable.ToString()!).EndLine();
+					break;
+				case StoreGlobal storeVariable:
+					writer.Text("store_global").Space().Keyword(storeVariable.Variable.ToString()!).EndLine();
+					break;
+				case LoadPointer loadPointer:
+					writer.Text("load_pointer").Space().Keyword($"{loadPointer.DataType}_{loadPointer.Size}").EndLine();
+					break;
+				case StorePointer storePointer:
+					writer.Text("store_pointer").Space().Keyword($"{storePointer.DataType}_{storePointer.Size}").EndLine();
+					break;
+				case DuplicateStackValue:
+					writer.Text("dup").EndLine();
+					break;
+				case DropStackValue:
+					writer.Text("drop").EndLine();
 					break;
 
 				case UnaryOperator unaryOperator:

@@ -13,3 +13,15 @@ internal class WasmLocalVariable : IVariable
 
 	public override string ToString() => $"local {DataType}";
 }
+
+internal class WasmGlobalVariable : IVariable
+{
+	public DataType DataType { get; }
+
+	public WasmGlobalVariable(DataType type)
+	{
+		DataType = type;
+	}
+
+	public override string ToString() => $"global {DataType}";
+}

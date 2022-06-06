@@ -3,9 +3,9 @@ namespace HoLLy.Decompiler.Core.FrontEnd.IntermediateInstructions;
 /// <summary>
 /// Pushes a value from a variable (such as a register) onto the stack.
 /// </summary>
-public class LoadVariable : IntermediateInstruction
+public class LoadLocal : IntermediateInstruction
 {
-	public LoadVariable(IVariable variable)
+	public LoadLocal(IVariable variable)
 	{
 		Variable = variable;
 	}

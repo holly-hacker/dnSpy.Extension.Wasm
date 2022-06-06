@@ -1,8 +1,8 @@
 namespace HoLLy.Decompiler.Core.FrontEnd.IntermediateInstructions;
 
-public class StoreVariable : IntermediateInstruction
+public class StoreLocal : IntermediateInstruction
 {
-	public StoreVariable(IVariable variable)
+	public StoreLocal(IVariable variable)
 	{
 		Variable = variable;
 	}

@@ -41,8 +41,8 @@ internal class IntermediateInstructionArchitecture : IInstructionSetArchitecture
 	{
 		switch (instruction)
 		{
-			case LoadVariable:
-			case StoreVariable:
+			case LoadLocal:
+			case StoreLocal:
 				return 1;
 			default:
 				return 0;
@@ -53,10 +53,10 @@ internal class IntermediateInstructionArchitecture : IInstructionSetArchitecture
 	{
 		switch (instruction)
 		{
-			case LoadVariable lv:
+			case LoadLocal lv:
 				variablesBuffer[0] = new VariableWrapper(lv.Variable);
 				return 1;
-			case StoreVariable sv:
+			case StoreLocal sv:
 				variablesBuffer[0] = new VariableWrapper(sv.Variable);
 				return 1;
 			default:
@@ -68,7 +68,7 @@ internal class IntermediateInstructionArchitecture : IInstructionSetArchitecture
 	{
 		switch (instruction)
 		{
-			case StoreVariable:
+			case StoreLocal:
 				return 1;
 			default:
 				return 0;
@@ -79,7 +79,7 @@ internal class IntermediateInstructionArchitecture : IInstructionSetArchitecture
 	{
 		switch (instruction)
 		{
-			case StoreVariable sv:
+			case StoreLocal sv:
 				variablesBuffer[0] = new VariableWrapper(sv.Variable);
 				return 1;
 			default:

@@ -40,12 +40,13 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 		}
 
 		var instructions = new List<IntermediateInstruction>();
-		var variables = new List<WasmLocalVariable>();
+		var locals = new List<WasmLocalVariable>();
+		var globals = new Dictionary<uint, WasmGlobalVariable>();
 
 		foreach (var parameterType in _functionType.Parameters)
 		{
 			var type = WasmTypeToDecompilerType(parameterType);
-			variables.Add(new WasmLocalVariable(type));
+			locals.Add(new WasmLocalVariable(type));
 		}
 
 		foreach (var local in _locals)
@@ -60,7 +61,7 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 					WebAssemblyValueType.Float64 => DataType.F64,
 					_ => throw new ArgumentOutOfRangeException(),
 				};
-				variables.Add(new WasmLocalVariable(type));
+				locals.Add(new WasmLocalVariable(type));
 			}
 		}
 
@@ -87,6 +88,30 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 		}
 
 		LabelInfo GetLabel(uint i) => labelStack.ElementAt((int)i);
+
+		void AddJumpOutOfBlock(uint index, bool conditional)
+		{
+			var label = GetLabel(index);
+
+			switch (label.Type)
+			{
+				case LabelType.Loop:
+					AddInstruction(new Jump(conditional, label.StartInstruction));
+					break;
+				case LabelType.Block:
+				case LabelType.If:
+					var jump = new Jump(conditional);
+					AddInstruction(jump);
+					label.JumpsToEnd.Enqueue(jump);
+					break;
+				case LabelType.Else:
+					throw new NotImplementedException("branch from within else block");
+				default:
+					throw new ArgumentOutOfRangeException(nameof(label.Type), label.Type,
+						$"Unknown label type: {label.Type}");
+			}
+		}
+
 
 		// before doing anything, create a label for the function scope
 		// this is used so return instructions have something to jump to
@@ -144,12 +169,10 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 						Debug.Assert(instructionIndex == _code.Count - 1);
 
 						_ = labelTypesToAdd.Dequeue();
-
 					}
 					else
 					{
 						var label = labelStack.Pop();
-						Debug.Assert(label.Type == LabelType.Block);
 
 						if (label.Type == LabelType.Else)
 							throw new NotImplementedException("End for Else block");
@@ -165,49 +188,61 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 				}
 				case Branch branch:
 				{
-					var label = GetLabel(branch.Index);
-
-					switch (label.Type)
-					{
-						case LabelType.Loop:
-							AddInstruction(new Jump(false, label.StartInstruction));
-							break;
-						case LabelType.Block:
-						case LabelType.If:
-							var jump = new Jump(false);
-							AddInstruction(jump);
-							label.JumpsToEnd.Enqueue(jump);
-							break;
-						case LabelType.Else:
-							throw new NotImplementedException("branch from within else block");
-						default:
-							throw new ArgumentOutOfRangeException(nameof(label.Type), label.Type, $"Unknown label type: {label.Type}");
-					}
+					AddJumpOutOfBlock(branch.Index, false);
 					break;
 				}
 				case BranchIf branchIf:
 				{
-					var label = GetLabel(branchIf.Index);
-
-					switch (label.Type)
-					{
-						case LabelType.Loop:
-							AddInstruction(new Jump(true, label.StartInstruction));
-							break;
-						case LabelType.Block:
-						case LabelType.If:
-							var jump = new Jump(true);
-							AddInstruction(jump);
-							label.JumpsToEnd.Enqueue(jump);
-							break;
-						case LabelType.Else:
-							throw new NotImplementedException("branch_if from within else block");
-						default:
-							throw new ArgumentOutOfRangeException(nameof(label.Type), label.Type, $"Unknown label type: {label.Type}");
-					}
+					AddJumpOutOfBlock(branchIf.Index, true);
 					break;
 				}
-				// TODO: BrTable
+				case BranchTable branchTable:
+				{
+					/*
+					 * push some_index
+					 *
+					 * CASE_N:
+					 *     dup
+					 *     cmp 0
+					 *     jmp_ne CASE_N+1
+					 *     drop
+					 *     jmp TARGET_N
+					 *
+					 * (repeat for all labels)
+					 *
+					 * DEFAULT:
+					 *     jmp TARGET_DEFAULT
+					 */
+
+					var labels = branchTable.Labels;
+					uint defaultLabel = branchTable.DefaultLabel;
+
+					Jump? jumpToNext = null;
+					for (var index = 0; index < labels.Count; index++)
+					{
+						uint labelIndex = labels[index];
+
+						if (labelIndex == defaultLabel)
+							continue;
+
+						if (jumpToNext != null)
+							jumpsToAdd.Enqueue(jumpToNext);
+
+						AddInstruction(new DuplicateStackValue());
+						AddInstruction(new LoadConstant(new I32Value(index)));
+						AddInstruction(new BinaryOperator(BinaryOperationType.NotEqual, DataType.I32, DataType.I32, DataType.I32));
+						AddInstruction(jumpToNext = new Jump(true));
+						AddInstruction(new DropStackValue());
+						AddJumpOutOfBlock(labelIndex, false);
+					}
+
+					if (jumpToNext != null)
+						jumpsToAdd.Enqueue(jumpToNext);
+
+					AddJumpOutOfBlock(defaultLabel, false);
+
+					break;
+				}
 				#endregion
 
 				case Return:
@@ -232,22 +267,99 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 					break;
 				}
 
-				// TODO: Call, CallIndirect, Drop, Select
+				// TODO: CallIndirect
+				case Drop:
+					AddInstruction(new DropStackValue());
+					break;
+				// TODO: Select
 				case LocalGet get:
-					AddInstruction(new LoadVariable(variables[(int)get.Index]));
+					AddInstruction(new LoadLocal(locals[(int)get.Index]));
 					break;
 				case LocalSet set:
-					AddInstruction(new StoreVariable(variables[(int)set.Index]));
+					AddInstruction(new StoreLocal(locals[(int)set.Index]));
 					break;
 				case LocalTee tee:
 				{
-					var variable = variables[(int)tee.Index];
-					AddInstruction(new StoreVariable(variable));
-					AddInstruction(new LoadVariable(variable));
+					var variable = locals[(int)tee.Index];
+					AddInstruction(new StoreLocal(variable));
+					AddInstruction(new LoadLocal(variable));
+					break;
+				}
+				case GlobalGet get:
+				{
+					var global = globals.GetOrInsert(get.Index,
+						() => new WasmGlobalVariable(
+							WasmTypeToDecompilerType(_document.GetGlobalType((int)get.Index))));
+					AddInstruction(new LoadGlobal(global));
+					break;
+				}
+				case GlobalSet set:
+				{
+					var global = globals.GetOrInsert(set.Index,
+						() => new WasmGlobalVariable(
+							WasmTypeToDecompilerType(_document.GetGlobalType((int)set.Index))));
+					AddInstruction(new StoreGlobal(global));
 					break;
 				}
 				// TODO: {Global,Table}.{Get,Set}
-				// TODO: memory load/store/size/grow
+				case MemoryReadInstruction memoryRead:
+				{
+					(WebAssemblyValueType type, int size) = memoryRead switch
+					{
+						Int32Load8Signed _ => (WebAssemblyValueType.Int32, 1),
+						Int32Load8Unsigned _ => (WebAssemblyValueType.Int32, 1),
+						Int32Load16Signed _ => (WebAssemblyValueType.Int32, 2),
+						Int32Load16Unsigned _ => (WebAssemblyValueType.Int32, 2),
+						Int32Load _ => (WebAssemblyValueType.Int32, 4),
+						Int64Load8Signed _ => (WebAssemblyValueType.Int64, 1),
+						Int64Load8Unsigned _ => (WebAssemblyValueType.Int64, 1),
+						Int64Load16Signed _ => (WebAssemblyValueType.Int64, 2),
+						Int64Load16Unsigned _ => (WebAssemblyValueType.Int64, 2),
+						Int64Load32Signed _ => (WebAssemblyValueType.Int64, 4),
+						Int64Load32Unsigned _ => (WebAssemblyValueType.Int64, 4),
+						Int64Load _ => (WebAssemblyValueType.Int64, 8),
+						_ => throw new ArgumentOutOfRangeException(nameof(memoryRead),
+							"Unknown memory read instruction: " + memoryRead.GetType().Name),
+					};
+
+					if (memoryRead.Offset != 0)
+					{
+						AddInstruction(new LoadConstant(new I32Value((int)memoryRead.Offset)));
+						AddInstruction(new BinaryOperator(BinaryOperationType.Add, DataType.I32, DataType.I32, DataType.I32));
+					}
+
+					AddInstruction(new LoadPointer(WasmTypeToDecompilerType(type), size));
+					break;
+				}
+				case MemoryWriteInstruction memoryWrite:
+				{
+					(WebAssemblyValueType type, int size) = memoryWrite switch
+					{
+						Int32Store8 _ => (WebAssemblyValueType.Int32, 1),
+						Int32Store16 _ => (WebAssemblyValueType.Int32, 2),
+						Int32Store _ => (WebAssemblyValueType.Int32, 4),
+						Int64Store8 _ => (WebAssemblyValueType.Int64, 1),
+						Int64Store16 _ => (WebAssemblyValueType.Int64, 2),
+						Int64Store32 _ => (WebAssemblyValueType.Int64, 4),
+						Int64Store _ => (WebAssemblyValueType.Int64, 8),
+						_ => throw new ArgumentOutOfRangeException(nameof(memoryWrite),
+							"Unknown memory write instruction: " + memoryWrite.GetType().Name),
+					};
+
+					if (memoryWrite.Offset != 0)
+					{
+						// TODO: need to target the second value on the stack here
+						// we can either store the top value on the stack in a temporary variable, or swap the first and
+						// second values
+
+						AddInstruction(new LoadConstant(new I32Value((int)memoryWrite.Offset)));
+						AddInstruction(new BinaryOperator(BinaryOperationType.Add, DataType.I32, DataType.I32, DataType.I32));
+					}
+
+					AddInstruction(new StorePointer(WasmTypeToDecompilerType(type), size));
+					break;
+				}
+				// TODO: memory size/grow
 				case Int32Constant i32:
 					AddInstruction(new LoadConstant(new I32Value(i32.Value)));
 					break;
@@ -514,19 +626,83 @@ internal class WasmDecompilerFrontend : IDecompilerFrontend
 				#endregion
 
 				case Int32WrapInt64:
-					AddInstruction(
-						new ConversionOperator(DataType.I64, DataType.I32, ConversionType.Convert));
+					AddInstruction(new ConversionOperator(DataType.I64, DataType.I32, ConversionType.Convert));
 					break;
-				// TODO: other operations
+				case Int32TruncateFloat32Signed:
+					AddInstruction(new ConversionOperator(DataType.F32, DataType.I32, ConversionType.ConvertSigned));
+					break;
+				case Int32TruncateFloat32Unsigned:
+					AddInstruction(new ConversionOperator(DataType.F32, DataType.I32, ConversionType.Convert));
+					break;
+				case Int32TruncateFloat64Signed:
+					AddInstruction(new ConversionOperator(DataType.F64, DataType.I32, ConversionType.ConvertSigned));
+					break;
+				case Int32TruncateFloat64Unsigned:
+					AddInstruction(new ConversionOperator(DataType.F64, DataType.I32, ConversionType.Convert));
+					break;
+				case Int64ExtendInt32Signed:
+					AddInstruction(new ConversionOperator(DataType.I32, DataType.I64, ConversionType.ConvertSigned));
+					break;
+				case Int64ExtendInt32Unsigned:
+					AddInstruction(new ConversionOperator(DataType.I32, DataType.I64, ConversionType.Convert));
+					break;
+				case Int64TruncateFloat32Signed:
+					AddInstruction(new ConversionOperator(DataType.F32, DataType.I64, ConversionType.ConvertSigned));
+					break;
+				case Int64TruncateFloat32Unsigned:
+					AddInstruction(new ConversionOperator(DataType.F32, DataType.I64, ConversionType.Convert));
+					break;
+				case Int64TruncateFloat64Signed:
+					AddInstruction(new ConversionOperator(DataType.F64, DataType.I64, ConversionType.ConvertSigned));
+					break;
+				case Int64TruncateFloat64Unsigned:
+					AddInstruction(new ConversionOperator(DataType.F64, DataType.I64, ConversionType.Convert));
+					break;
+				case Float32ConvertInt32Signed:
+					AddInstruction(new ConversionOperator(DataType.I32, DataType.F32, ConversionType.ConvertSigned));
+					break;
+				case Float32ConvertInt32Unsigned:
+					AddInstruction(new ConversionOperator(DataType.I32, DataType.F32, ConversionType.Convert));
+					break;
+				case Float32ConvertInt64Signed:
+					AddInstruction(new ConversionOperator(DataType.I64, DataType.F32, ConversionType.ConvertSigned));
+					break;
+				case Float32ConvertInt64Unsigned:
+					AddInstruction(new ConversionOperator(DataType.I64, DataType.F32, ConversionType.Convert));
+					break;
+				case Float32DemoteFloat64:
+					AddInstruction(new ConversionOperator(DataType.F64, DataType.F32, ConversionType.Convert));
+					break;
+				case Float64ConvertInt32Signed:
+					AddInstruction(new ConversionOperator(DataType.I32, DataType.F64, ConversionType.ConvertSigned));
+					break;
+				case Float64ConvertInt32Unsigned:
+					AddInstruction(new ConversionOperator(DataType.I32, DataType.F64, ConversionType.Convert));
+					break;
+				case Float64ConvertInt64Signed:
+					AddInstruction(new ConversionOperator(DataType.I64, DataType.F64, ConversionType.ConvertSigned));
+					break;
+				case Float64ConvertInt64Unsigned:
+					AddInstruction(new ConversionOperator(DataType.I64, DataType.F64, ConversionType.Convert));
+					break;
+				case Float64PromoteFloat32:
+					AddInstruction(new ConversionOperator(DataType.F32, DataType.F64, ConversionType.Convert));
+					break;
 				case Int32ReinterpretFloat32:
 					AddInstruction(new ConversionOperator(DataType.F32, DataType.I32, ConversionType.Reinterpret));
+					break;
+				case Int64ReinterpretFloat64:
+					AddInstruction(new ConversionOperator(DataType.F64, DataType.I64, ConversionType.Reinterpret));
 					break;
 				case Float32ReinterpretInt32:
 					AddInstruction(new ConversionOperator(DataType.I32, DataType.F32, ConversionType.Reinterpret));
 					break;
+				case Float64ReinterpretInt64:
+					AddInstruction(new ConversionOperator(DataType.I64, DataType.F64, ConversionType.Reinterpret));
+					break;
 				// TODO: other operations
 				default:
-					throw new NotImplementedException("Not opcode implemented: " + wasmInstruction.OpCode);
+					throw new NotImplementedException("Translating opcode to IR not implemented: " + wasmInstruction.OpCode);
 			}
 		}
 
