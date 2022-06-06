@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run dnSpy (64-bit)" type="RunExe" factoryName=".NET Executable">
+  <configuration default="false" name="Run dnSpy (64-bit, net48)" type="RunExe" factoryName=".NET Executable">
     <option name="EXE_PATH" value="$PROJECT_DIR$/dnSpy/dnSpy/dnSpy/bin/Release/net48/dnSpy.exe" />
     <option name="PROGRAM_PARAMETERS" value="--extension-directory &quot;$PROJECT_DIR$/dnSpy.Extension.Wasm/bin/Debug/net48/&quot;" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/dnSpy/dnSpy/dnSpy/bin/Release/net48" />
@@ -7,6 +7,7 @@
     <option name="USE_EXTERNAL_CONSOLE" value="0" />
     <option name="USE_MONO" value="0" />
     <option name="RUNTIME_ARGUMENTS" value="" />
+    <option name="RUNTIME_TYPE" value="netfw" />
     <method v="2">
       <option name="Build Solution" enabled="true" />
     </method>

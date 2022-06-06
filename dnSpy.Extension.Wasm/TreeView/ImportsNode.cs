@@ -11,15 +11,12 @@ using WebAssembly;
 
 namespace dnSpy.Extension.Wasm.TreeView;
 
-internal class ImportsNode : DocumentTreeNodeData, IDecompileSelf
+internal class ImportsNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("d09cbe50-b61a-4af2-9e1c-711b4c750ec4");
 
-	private readonly WasmDocument _document;
-
-	public ImportsNode(WasmDocument document)
+	public ImportsNode(WasmDocument document) : base(document)
 	{
-		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -41,28 +38,26 @@ internal class ImportsNode : DocumentTreeNodeData, IDecompileSelf
 	public override IEnumerable<TreeNodeData> CreateChildren()
 	{
 		var (functionIndex, tableIndex, memoryIndex, globalIndex) = (0, 0, 0, 0);
-		return _document.Module.Imports.Select(import => (TreeNodeData)(import switch
+		return Document.Module.Imports.Select(import => (TreeNodeData)(import switch
 		{
-			Import.Function function => new FunctionImportNode(_document, function, functionIndex++),
-			Import.Table table => new TableImportNode(table, tableIndex++),
-			Import.Memory memory => new MemoryImportNode(memory, memoryIndex++),
-			Import.Global global => new GlobalImportNode(global, globalIndex++),
+			Import.Function function => new FunctionImportNode(Document, function, functionIndex++),
+			Import.Table table => new TableImportNode(Document, table, tableIndex++),
+			Import.Memory memory => new MemoryImportNode(Document, memory, memoryIndex++),
+			Import.Global global => new GlobalImportNode(Document, global, globalIndex++),
 			_ => throw new ArgumentOutOfRangeException()
 		}));
 	}
 }
 
-internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
+internal class FunctionImportNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("97a6413a-36b5-42b4-b490-fb6b8e0cd713");
 
-	private readonly WasmDocument _document;
 	private readonly Import.Function _function;
 
-	public FunctionImportNode(WasmDocument document, Import.Function function, int functionIndex)
+	public FunctionImportNode(WasmDocument document, Import.Function function, int functionIndex) : base(document)
 	{
 		FunctionIndex = functionIndex;
-		_document = document;
 		_function = function;
 	}
 
@@ -77,7 +72,7 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 	{
 		var writer = new TextColorWriter(output);
 
-		var type = _document.Module.Types[(int)_function.TypeIndex];
+		var type = Document.Module.Types[(int)_function.TypeIndex];
 		writer.FunctionDeclaration(_function.GetFullName(), type);
 	}
 
@@ -85,7 +80,7 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 	{
 		var writer = new DecompilerWriter(context.Output);
 
-		var type = _document.Module.Types[(int)_function.TypeIndex];
+		var type = Document.Module.Types[(int)_function.TypeIndex];
 		writer.Keyword("import").Space()
 			.FunctionDeclaration(_function.GetFullName(), type, FunctionIndex);
 
@@ -93,13 +88,13 @@ internal class FunctionImportNode : DocumentTreeNodeData, IDecompileSelf
 	}
 }
 
-internal class TableImportNode : DocumentTreeNodeData, IDecompileSelf
+internal class TableImportNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("bc0ccbd9-4445-4484-b6ae-f32b69203928");
 
 	private readonly Import.Table _table;
 
-	public TableImportNode(Import.Table table, int tableIndex)
+	public TableImportNode(WasmDocument document, Import.Table table, int tableIndex) : base(document)
 	{
 		TableIndex = tableIndex;
 		_table = table;
@@ -131,13 +126,13 @@ internal class TableImportNode : DocumentTreeNodeData, IDecompileSelf
 	}
 }
 
-internal class MemoryImportNode : DocumentTreeNodeData, IDecompileSelf
+internal class MemoryImportNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("88e710e0-8ed1-4152-a161-c9f66fb539f7");
 
 	private readonly Import.Memory _memory;
 
-	public MemoryImportNode(Import.Memory memory, int memoryIndex)
+	public MemoryImportNode(WasmDocument document, Import.Memory memory, int memoryIndex) : base(document)
 	{
 		MemoryIndex = memoryIndex;
 		_memory = memory;
@@ -169,13 +164,13 @@ internal class MemoryImportNode : DocumentTreeNodeData, IDecompileSelf
 	}
 }
 
-internal class GlobalImportNode : DocumentTreeNodeData, IDecompileSelf
+internal class GlobalImportNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("264203ea-16c1-4c38-b6bd-f99bd5ca4c49");
 
 	private readonly Import.Global _global;
 
-	public GlobalImportNode(Import.Global global, int globalIndex)
+	public GlobalImportNode(WasmDocument document, Import.Global global, int globalIndex) : base(document)
 	{
 		_global = global;
 		GlobalIndex = globalIndex;

@@ -7,15 +7,12 @@ using dnSpy.Contracts.Text;
 
 namespace dnSpy.Extension.Wasm.TreeView;
 
-internal class MemoriesNode : DocumentTreeNodeData, IDecompileSelf
+internal class MemoriesNode : WasmDocumentTreeNodeData, IDecompileSelf
 {
 	public static readonly Guid MyGuid = new("3ce90685-853b-4141-bbac-096efc76ff1b");
 
-	private readonly WasmDocument _document;
-
-	public MemoriesNode(WasmDocument document)
+	public MemoriesNode(WasmDocument document) : base(document)
 	{
-		_document = document;
 	}
 
 	public override Guid Guid => MyGuid;
@@ -32,9 +29,9 @@ internal class MemoriesNode : DocumentTreeNodeData, IDecompileSelf
 	{
 		var writer = new DecompilerWriter(context.Output);
 
-		for (var i = 0; i < _document.Module.Memories.Count; i++)
+		for (var i = 0; i < Document.Module.Memories.Count; i++)
 		{
-			var moduleMemory = _document.Module.Memories[i];
+			var moduleMemory = Document.Module.Memories[i];
 			writer.Keyword("memory").Space().Number(i).Punctuation(": ")
 				.Limits(moduleMemory.ResizableLimits).EndLine();
 		}

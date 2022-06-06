@@ -102,10 +102,12 @@ internal abstract class ArbitraryTextWriter : ITextColorWriter
 
 internal static class TextWriterExtensions
 {
-	private static T Write<T>(this T writer, string text, object color, object? reference = null,
+	private static T Write<T>(this T writer, string? text, object color, object? reference = null,
 		DecompilerReferenceFlags flags = DecompilerReferenceFlags.None) where T : ArbitraryTextWriter
 	{
-		writer.WriteInternal(text, color, reference, flags);
+		if (text != null)
+			writer.WriteInternal(text, color, reference, flags);
+
 		return writer;
 	}
 
@@ -127,10 +129,17 @@ internal static class TextWriterExtensions
 
 	public static T Punctuation<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Punctuation);
 
+	public static T Comment<T>(this T writer, string text) where T : ArbitraryTextWriter => writer.Write(text, BoxedTextColor.Comment);
+
 	public static T Number<T>(this T writer, int number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 	public static T Number<T>(this T writer, long number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 	public static T Number<T>(this T writer, float number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
 	public static T Number<T>(this T writer, double number) where T : ArbitraryTextWriter => writer.Write(number.ToString(CultureInfo.InvariantCulture), BoxedTextColor.Number, number);
+
+	public static T Number<T>(this T writer, int number, string format) where T : ArbitraryTextWriter => writer.Write(number.ToString(format), BoxedTextColor.Number, number);
+	public static T Number<T>(this T writer, long number, string format) where T : ArbitraryTextWriter => writer.Write(number.ToString(format), BoxedTextColor.Number, number);
+	public static T Number<T>(this T writer, float number, string format) where T : ArbitraryTextWriter => writer.Write(number.ToString(format), BoxedTextColor.Number, number);
+	public static T Number<T>(this T writer, double number, string format) where T : ArbitraryTextWriter => writer.Write(number.ToString(format), BoxedTextColor.Number, number);
 
 	public static T Label<T>(this T writer, string text, object? reference = null, bool isDefinition = false) where T : ArbitraryTextWriter
 	{

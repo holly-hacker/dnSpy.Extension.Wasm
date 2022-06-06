@@ -11,9 +11,13 @@
         <AssemblyVersion>0.1.0.0</AssemblyVersion>
         <Description>WebAssembly support</Description>
         <Copyright>Copyright (C) HoLLy</Copyright>
+
+        <!-- Ensure all dependencies are copied (required for nuget packages) -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Decompiler.Core\Decompiler.Core.csproj" />
         <ProjectReference Include="..\dnSpy\dnSpy\dnSpy.Contracts.DnSpy\dnSpy.Contracts.DnSpy.csproj" />
         <ProjectReference Include="..\dnSpy\dnSpy\dnSpy.Contracts.Logic\dnSpy.Contracts.Logic.csproj" />
     </ItemGroup>
